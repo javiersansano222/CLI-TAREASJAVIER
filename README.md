@@ -39,6 +39,9 @@ uv tool update-shell   # si «tareas» no aparece en el PATH
 ## Uso rápido
 
 ```bash
+tareas                  # abre el menú interactivo
+tareas --help           # ayuda general
+
 hola
 tareas hola
 
@@ -63,8 +66,26 @@ tareas ejecutar limpiar-temporales --si
 tareas --config ~/pruebas-tareas/acciones.json acciones
 ```
 
-`--config` es una opción global y va **antes** de la orden. Por defecto se lee
-`./acciones.json`, en la carpeta desde la que se lanza la orden.
+Todas las órdenes funcionan desde cualquier carpeta. `--config` es una opción
+global y va **antes** de la orden. Por defecto se lee `./acciones.json`, en la
+carpeta desde la que se lanza la orden.
+
+## Menú interactivo
+
+Al escribir `tareas` sin argumentos se abre un menú con todas las órdenes
+disponibles. Desde ahí se escribe la orden igual que en la terminal:
+
+```text
+tareas> version
+tareas> hola
+tareas> capturas --simular
+tareas> informe --top 3
+tareas> salir
+```
+
+También se pueden usar `ayuda` o `?` para ver la ayuda, y `salir`, `exit`,
+`quit` o `q` para terminar. El menú lee las órdenes registradas en Typer, así
+que las que se añadan en el futuro aparecen automáticamente.
 
 ## Bienvenida personalizada
 
@@ -76,7 +97,8 @@ tareas hola
 hola
 ```
 
-No necesita `acciones.json` ni toca ningún fichero.
+No necesita `acciones.json` ni toca ningún fichero. Funciona desde cualquier
+carpeta, igual que el resto de órdenes.
 
 ## Capturas de pantalla
 
@@ -209,6 +231,7 @@ cli-tareas/
         ├── cli.py             Órdenes, opciones y salida
         ├── config.py          Carga y valida acciones.json
         ├── informe.py         Cuenta ficheros, tipos y capturas pendientes
+        ├── menu.py            Menú interactivo de todas las órdenes
         ├── errores.py         Excepciones propias
         ├── acciones.py        Clases Mover, Copiar, Renombrar y Borrar
         └── motor.py           Selecciona ficheros y ejecuta la acción
@@ -225,7 +248,7 @@ cli-tareas/
 - Ruta inexistente o fichero: mensaje en stderr y código 1.
 - Nombres con corchetes (`[borrador].pdf`) y espacios: se muestran enteros.
 - `uv run python -m tareas version`: funciona.
-- `uv tool install --editable .`: comando disponible desde cualquier carpeta.
+- `uv tool install --editable .`: comandos disponibles desde cualquier carpeta.
 
 Modelo del centro: comprobado con `opencode run`; responde correctamente con la clave configurada en `CENTRO_IA_KEY`.
 
@@ -234,7 +257,16 @@ Modelo del centro: comprobado con `opencode run`; responde correctamente con la 
 - `tareas hola` y el ejecutable directo `hola` muestran el banner ASCII.
 - El mensaje «Bienvenido a mi terminal personalizado» aparece centrado.
 - Funciona sin `acciones.json` y no modifica ningún fichero.
-- Comprobado en terminal normal y en la instalación global.
+- Comprobado desde cualquier carpeta, también con la instalación global.
+
+## Estado del menú interactivo
+
+- `tareas` sin argumentos abre el menú; `tareas --help` sigue mostrando la ayuda.
+- Desde el menú funcionan `version`, `hola`, `listar`, `capturas`, `informe`, `validar`, `acciones` y `ejecutar`.
+- `salir`, `exit`, `quit` y `q` cierran el menú; `ayuda` y `?` muestran la ayuda.
+- También acepta el prefijo `tareas`, por ejemplo `tareas version`.
+- Las órdenes nuevas aparecen en el menú automáticamente.
+- Probado con entrada por tubería (`printf 'version\nsalir\n' | tareas`) y sin entrada.
 
 ## Estado de la semana 2
 

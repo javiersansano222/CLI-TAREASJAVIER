@@ -16,11 +16,12 @@ from tareas import informe as modulo_informe
 from tareas.acciones import Resultado
 from tareas.bienvenida import mostrar_bienvenida
 from tareas.errores import TareasError
+from tareas.menu import menu_interactivo
 from tareas.motor import Motor
 
 app = typer.Typer(
     help="tareas: automatiza tareas repetitivas con tus ficheros.",
-    no_args_is_help=True,
+    no_args_is_help=False,
     add_completion=False,
 )
 consola = Console()
@@ -110,7 +111,7 @@ def _pintar_resultados(
     return errores == 0
 
 
-@app.callback()
+@app.callback(invoke_without_command=True)
 def principal(
     ctx: typer.Context,
     config: Annotated[
@@ -123,6 +124,8 @@ def principal(
 ) -> None:
     """Configura la ruta de acciones.json para todas las órdenes."""
     ctx.obj = config
+    if ctx.invoked_subcommand is None:
+        menu_interactivo(app)
 
 
 @app.command()

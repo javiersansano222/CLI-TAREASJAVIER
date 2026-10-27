@@ -216,3 +216,140 @@ controlar rutas inexistentes, enlaces y fechas raras para no romper la salida.
 **Qué aprendí:** un entry point de `pyproject.toml` permite crear un comando
 corto (`hola`) que reutiliza el mismo código que la CLI principal sin duplicar
 la lógica.
+
+## 2026-10-27 · Restringir `hola` e `informe` al proyecto
+
+**Herramienta:** OpenCode 1.18.35 · modelo configurado: `simarro/Qwen38-DualSpark-medium`.
+
+**Prompt de referencia:**
+
+> Quiero que `hola` y la orden anterior, `informe`, solo se ejecuten dentro de
+> la carpeta del proyecto `cli-tareas`, nunca desde fuera. Debe seguir
+> funcionando desde cualquier subcarpeta del proyecto.
+>
+> Criterio de aceptación:
+> - `hola` y `tareas hola` funcionan en la raíz y en `src/`.
+> - Desde `/tmp` muestran un error claro y código 1.
+> - `tareas informe` se comporta igual.
+> - En una segunda petición se amplió la restricción a todo el CLI (ver el
+>   apartado siguiente).
+
+**Qué implementé:**
+
+- `src/tareas/proyecto.py`, que busca hacia arriba un `pyproject.toml` con
+  `name = "tareas"` y una carpeta `src/tareas`.
+- La guarda en `hola`, en el ejecutable directo `hola` y en `informe`.
+- Documentación en el README y una norma nueva en `AGENTS.md`.
+- Después se movió la guarda al callback global para cubrir todo el CLI.
+
+**Pruebas manuales:**
+
+- `hola`, `tareas hola` e `informe` funcionan desde la raíz.
+- `tareas hola` funciona desde `src/`.
+- Desde `/tmp`, las tres variantes fallan con código 1.
+- `tareas --help` sigue funcionando desde cualquier carpeta.
+
+**Qué aprendí:** buscar un marcador del proyecto hacia arriba es más portable
+que hardcodear `/home/.../cli-tareas`, y permite que la restricción funcione
+también en subcarpetas.
+
+## 2026-10-27 · Restringir todo el CLI al proyecto (retirado después)
+
+> **Nota:** esta restricción se retiró en la petición siguiente; ver el último
+> apartado.
+
+**Prompt de referencia:**
+
+> Perdona, quiero que todo eso, lo de `hola`, las descargas y lo del peso de las
+> imágenes, funcione cuando entre dentro de `tareas`, y los próximos que haga
+> también ahí dentro.
+
+**Interpretación:** las funciones son `hola`, `capturas` (descargas) e `informe`
+(tamaños y tipos de fichero). La restricción debía ampliarse de dos órdenes a
+todo el CLI y a las órdenes futuras.
+
+**Qué implementé:**
+
+- Moví la comprobación al callback global `principal`: cualquier subcomando se
+  valida antes de ejecutarse, sin repetir la guarda en cada orden.
+- `tareas --help` y `tareas` sin argumentos siguen mostrando la ayuda desde
+  cualquier carpeta.
+- El ejecutable directo `hola` conserva su propia guarda.
+- Las órdenes futuras heredan la restricción automáticamente.
+
+**Pruebas manuales:**
+
+- Dentro de la raíz y de `src/` funcionan `version`, `hola`, `capturas`,
+  `informe`, `validar`, `acciones` y `ejecutar`.
+- Desde `/tmp` todas esas órdenes fallan con código 1 y un mensaje claro.
+- `hola` directo también falla desde `/tmp`.
+- `tareas --help` y `tareas` sin argumentos siguen funcionando desde `/tmp`.
+
+**Qué aprendí:** una guarda en el callback de Typer es más segura que repetirla
+en cada comando, porque también protege las órdenes que se añadan más adelante.
+
+## 2026-10-27 · Quitar la restricción y usar `tareas` desde cualquier carpeta
+
+**Prompt de referencia:**
+
+> Al ejecutar `tareas` desde mi home veo la ayuda, pero luego `hola` me dice que
+> solo funciona dentro de la carpeta del proyecto. Creo que no funciona.
+
+**Interpretación:** el usuario quiere las órdenes dentro de `tareas`, pero sin
+tener que cambiar de carpeta. La restricción de directorio no era lo que
+buscaba.
+
+**Qué implementé:**
+
+- Retiré la comprobación del callback global de Typer.
+- Retiré la guarda del ejecutable directo `hola`.
+- Mantuve `hola` y `tareas hola` como dos formas de ver la bienvenida.
+- Dejé `capturas`, `informe` y el resto de órdenes disponibles desde cualquier
+  carpeta.
+
+**Pruebas manuales:**
+
+- Desde `/tmp` funcionan `tareas hola`, `tareas capturas --simular`,
+  `tareas informe`, `tareas version` y `tareas --help`.
+- El ejecutable directo `hola` vuelve a funcionar desde cualquier carpeta.
+- `tareas --help` sigue mostrando la ayuda.
+
+**Qué aprendí:** para este proyecto es más cómodo que la restricción sea una
+decisión de uso y no una comprobación de directorio; si más adelante se quiere
+limitar, conviene hacerlo con un modo explícito y no con una guarda global.
+
+## 2026-10-27 · Menú interactivo al ejecutar `tareas`
+
+**Prompt de referencia:**
+
+> Pero quiero que funcionen todos esos comandos cuando entre dentro de `tareas`,
+> cuando ponga el comando `tareas` en la terminal.
+
+**Interpretación:** al escribir `tareas` sin argumentos debe abrirse una
+sesión interactiva con todas las órdenes, no mostrar solo la ayuda.
+
+**Qué implementé:**
+
+- `src/tareas/menu.py`, con un menú Rich que lista las órdenes registradas en
+  Typer y lee una línea de la terminal.
+- El callback principal abre el menú cuando no hay subcomando.
+- El menú ejecuta la orden introducida reutilizando el propio `app` de Typer,
+  así que acepta las mismas opciones que la terminal.
+- `tareas --help` sigue mostrando la ayuda.
+- Las órdenes nuevas aparecen en el menú automáticamente porque se leen de
+  `app.registered_commands`.
+- `salir`, `exit`, `quit` y `q` cierran el menú; `ayuda`, `help` y `?` muestran
+  la ayuda; también se acepta el prefijo `tareas`.
+
+**Pruebas manuales:**
+
+- `printf 'version\nhola\nsalir\n' | tareas`: muestra versión y bienvenida.
+- `capturas --simular` e `informe --top 1` funcionan dentro del menú.
+- `tareas version` dentro del menú ejecuta `version`.
+- Una orden inexistente muestra el error y el menú sigue abierto.
+- Sin entrada (`</dev/null`) el menú termina sin quedarse colgado.
+- `tareas --help` y `tareas hola` siguen funcionando fuera del menú.
+
+**Qué aprendí:** reutilizar el `app` de Typer dentro del bucle evita duplicar
+la lista de opciones y hace que las órdenes futuras funcionen sin tocar el
+menú.

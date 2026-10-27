@@ -141,3 +141,43 @@ conviene leer XDG en Linux y tener alternativas para Windows/macOS. Enviar a la
 papelera no es lo mismo que `unlink`, y `send2trash` permite hacerlo sin
 depender de un comando del sistema. También aprendí a separar la simulación de
 la ejecución real para poder probar sin riesgo.
+
+## 2026-10-27 · Orden informe: resumen de descargas
+
+**Herramienta:** OpenCode 1.18.35 · modelo configurado: `simarro/Qwen38-DualSpark-medium`.
+
+**Prompt de referencia:**
+
+> Añade una orden `informe` que muestre un resumen de solo lectura de la carpeta
+> de descargas: número de ficheros y carpetas, tamaño total, tipos, capturas
+> pendientes y los ficheros más antiguos y más grandes. Debe aceptar `--carpeta`,
+> `--top` y `--horas`, funcionar en Linux, Windows y macOS y no modificar nada.
+>
+> Criterio de aceptación:
+> - Usa la misma detección de capturas que `tareas capturas`.
+> - Ignora enlaces simbólicos y no entra en subcarpetas.
+> - Las tablas se limitan con `--top` y no fallan con una carpeta vacía.
+> - Ruta inexistente: código 1 sin traceback.
+> - `--top 0` o `--horas 0`: error de uso con código 2.
+
+**Qué implementé:**
+
+- `src/tareas/informe.py` con un resumen inmutable de ficheros, tipos y capturas.
+- La orden `tareas informe` con `--carpeta`, `--top` y `--horas`.
+- Reutilización de `es_captura()` de `capturas.py` para no duplicar patrones.
+- Tablas Rich para tipos, ficheros más antiguos y ficheros más grandes.
+- Documentación en el README y actualización de `AGENTS.md`.
+
+**Pruebas manuales (en `~/pruebas-tareas/semana3/capturas`):**
+
+- Recuento de ficheros, carpetas y tamaño total.
+- Agrupación por extensión y capturas totales/pendientes.
+- Ficheros más antiguos y más grandes con `--top`.
+- Enlaces simbólicos y subcarpetas ignorados.
+- Carpeta vacía, ruta inexistente y valores cero de `--top`/`--horas`.
+- Comprobado que no se modifica ningún fichero.
+
+**Qué aprendí:** un informe es más útil si separa datos globales de listas
+cortas; conviene reutilizar la detección de capturas para que el informe y la
+limpieza no discrepen. También aprendí que hasta una orden de solo lectura debe
+controlar rutas inexistentes, enlaces y fechas raras para no romper la salida.

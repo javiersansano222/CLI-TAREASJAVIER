@@ -12,6 +12,7 @@ from rich.table import Table
 from tareas import __version__
 from tareas import capturas as modulo_capturas
 from tareas import config as configuracion
+from tareas import informe as modulo_informe
 from tareas.acciones import Resultado
 from tareas.errores import TareasError
 from tareas.motor import Motor
@@ -36,6 +37,14 @@ def tamano_legible(n: int) -> str:
         if tamano < 1024:
             break
     return f"{tamano:.1f} {unidad}"
+
+
+def fecha_legible(marca: float) -> str:
+    """Formatea una fecha de modificación sin romper con valores extremos."""
+    try:
+        return datetime.fromtimestamp(marca).strftime("%Y-%m-%d %H:%M")
+    except (OSError, OverflowError, ValueError):
+        return "—"
 
 
 def _mostrar_error(error: TareasError) -> NoReturn:
@@ -218,6 +227,84 @@ def capturas(
     resultados = modulo_capturas.enviar_a_papelera(ficheros, simular)
     if not _pintar_resultados(resultados, "capturas", simular, ruta_completa=False):
         raise typer.Exit(code=1)
+
+
+@app.command()
+def informe(
+    carpeta: Annotated[
+        Path | None,
+        typer.Option("--carpeta", help="Carpeta a analizar (por defecto, descargas)."),
+    ] = None,
+    top: Annotated[
+        int,
+        typer.Option("--top", help="Número de filas en cada tabla."),
+    ] = 5,
+    horas: Annotated[
+        int,
+        typer.Option("--horas", help="Antigüedad para contar capturas pendientes."),
+    ] = 5,
+) -> None:
+    """Muestra un resumen de solo lectura de la carpeta de descargas."""
+    if top < 1:
+        raise typer.BadParameter("debe ser 1 o más", param_hint="--top")
+    if horas < 1:
+        raise typer.BadParameter("debe ser 1 o más", param_hint="--horas")
+
+    ruta = (carpeta or modulo_capturas.carpeta_descargas()).expanduser()
+    try:
+        resumen = modulo_informe.analizar(ruta, top, horas)
+    except TareasError as error:
+        _mostrar_error(error)
+
+    consola.print(f"[bold]Informe de {escape(str(ruta))}[/bold]")
+    consola.print(
+        f"Ficheros: {resumen.ficheros} · Carpetas: {resumen.carpetas} · "
+        f"Tamaño: {tamano_legible(resumen.tamano)}"
+    )
+    consola.print(
+        f"Capturas: {resumen.capturas} · Pendientes de papelera "
+        f"(con {horas} h o más): {resumen.capturas_pendientes}"
+    )
+
+    if resumen.ficheros == 0:
+        consola.print("No hay ficheros que analizar.")
+        return
+
+    tabla_tipos = Table(title=f"Tipos (top {top})")
+    tabla_tipos.add_column("Extensión")
+    tabla_tipos.add_column("Ficheros", justify="right")
+    tabla_tipos.add_column("Tamaño", justify="right")
+    for tipo in resumen.tipos:
+        tabla_tipos.add_row(
+            escape(tipo.extension),
+            str(tipo.ficheros),
+            tamano_legible(tipo.tamano),
+        )
+    consola.print(tabla_tipos)
+
+    tabla_antiguos = Table(title=f"Más antiguos (top {top})")
+    tabla_antiguos.add_column("Fichero")
+    tabla_antiguos.add_column("Modificado")
+    tabla_antiguos.add_column("Tamaño", justify="right")
+    for fichero in resumen.mas_antiguos:
+        tabla_antiguos.add_row(
+            escape(fichero.ruta.name),
+            fecha_legible(fichero.modificado),
+            tamano_legible(fichero.tamano),
+        )
+    consola.print(tabla_antiguos)
+
+    tabla_grandes = Table(title=f"Más grandes (top {top})")
+    tabla_grandes.add_column("Fichero")
+    tabla_grandes.add_column("Tamaño", justify="right")
+    tabla_grandes.add_column("Modificado")
+    for fichero in resumen.mas_grandes:
+        tabla_grandes.add_row(
+            escape(fichero.ruta.name),
+            tamano_legible(fichero.tamano),
+            fecha_legible(fichero.modificado),
+        )
+    consola.print(tabla_grandes)
 
 
 @app.command()

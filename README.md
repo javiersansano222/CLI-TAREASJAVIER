@@ -7,7 +7,7 @@ Mi herramienta de línea de órdenes para automatizar tareas repetitivas con fic
 1. **Problema:** cada semana pierdo tiempo ordenando Descargas, limpiando temporales antiguos y poniendo nombre a las capturas a mano.
 2. **Para quién:** para mí y para mis compañeros de clase.
 3. **Cómo se usa:** `tareas ORDEN [CARPETA] [opciones]` desde cualquier terminal.
-4. **Órdenes:** `--help`, `version`, `listar`, `capturas`, `acciones`, `validar` y `ejecutar`.
+4. **Órdenes:** `--help`, `version`, `listar`, `capturas`, `informe`, `acciones`, `validar` y `ejecutar`.
 5. **Mis 3 acciones:** limpiar temporales de más de 30 días, mover imágenes a `~/Imágenes/Fotos` y renombrar capturas por fecha.
 6. **Nunca hará:** borrar sin pedir confirmación (salvo `--si`) ni tocar ficheros fuera del origen y destino configurados.
 7. **Plataformas:** Linux primero; también Windows y macOS.
@@ -42,6 +42,9 @@ uv tool update-shell   # si «tareas» no aparece en el PATH
 tareas capturas --simular
 tareas capturas
 tareas capturas --carpeta ~/pruebas-tareas/capturas --horas 5
+
+tareas informe
+tareas informe --carpeta ~/pruebas-tareas/capturas --top 3
 
 tareas validar
 tareas acciones
@@ -81,6 +84,23 @@ tareas capturas --carpeta ~/pruebas-tareas/capturas
 
 No borra definitivamente: usa la papelera del sistema mediante `send2trash`.
 La orden nunca toca subcarpetas ni enlaces simbólicos.
+
+## Informe de descargas
+
+`tareas informe` muestra un resumen de solo lectura de la carpeta de descargas:
+número de ficheros y carpetas, tamaño total, tipos de fichero, capturas
+pendientes de limpiar y los ficheros más antiguos y más grandes.
+
+```bash
+tareas informe
+tareas informe --top 10
+tareas informe --carpeta ~/pruebas-tareas/capturas
+tareas informe --horas 8
+```
+
+No mueve, renombra ni borra nada. Solo cuenta el primer nivel de la carpeta e
+ignora enlaces simbólicos. `--top` limita las filas de cada tabla y `--horas`
+cambia la antigüedad con la que se cuentan las capturas pendientes.
 
 ## Esquema de acciones.json
 
@@ -172,6 +192,7 @@ cli-tareas/
         ├── capturas.py        Detecta capturas y las manda a la papelera
         ├── cli.py             Órdenes, opciones y salida
         ├── config.py          Carga y valida acciones.json
+        ├── informe.py         Cuenta ficheros, tipos y capturas pendientes
         ├── errores.py         Excepciones propias
         ├── acciones.py        Clases Mover, Copiar, Renombrar y Borrar
         └── motor.py           Selecciona ficheros y ejecuta la acción
@@ -219,6 +240,19 @@ Comprobado en `~/pruebas-tareas/semana3/capturas`:
 - Con `--simular` no envía nada a la papelera.
 - Con `--si` envía las capturas antiguas a la papelera del sistema.
 - `--horas` cambia el límite y `--carpeta` permite probar en una carpeta aislada.
+
+## Estado de la orden informe
+
+Comprobado en `~/pruebas-tareas/semana3/capturas`:
+
+- Cuenta ficheros y carpetas del primer nivel, sin seguir enlaces simbólicos.
+- Suma el tamaño total y agrupa por extensión.
+- Distingue capturas totales de las pendientes de papelera.
+- Muestra los ficheros más antiguos y los más grandes.
+- `--top` limita las tablas y `--horas` cambia el límite de capturas pendientes.
+- Carpeta vacía: resumen a cero sin errores.
+- Ruta inexistente o fichero: código 1 sin traceback.
+- `--top 0` o `--horas 0`: error de uso con código 2.
 
 Pendiente para las semanas 3 y 4: capa de IA, pruebas automáticas con `pytest`,
 GitHub Actions, release v1.0 y prueba de instalación en otro sistema.

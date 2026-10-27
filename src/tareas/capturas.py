@@ -57,6 +57,14 @@ def carpeta_descargas() -> Path:
     return Path.home() / "Downloads"
 
 
+def es_captura(ruta: Path) -> bool:
+    """Indica si el nombre y la extensión parecen de una captura de pantalla."""
+    return (
+        ruta.suffix.lower() in EXTENSIONES
+        and PATRON_CAPTURA.search(ruta.stem) is not None
+    )
+
+
 def seleccionar(carpeta: Path, horas: int) -> list[Path]:
     """Devuelve las capturas con al menos las horas indicadas."""
     limite = time.time() - horas * 3600
@@ -76,9 +84,7 @@ def seleccionar(carpeta: Path, horas: int) -> list[Path]:
             datos = ruta.stat()
         except OSError:
             continue
-        if ruta.suffix.lower() not in EXTENSIONES:
-            continue
-        if not PATRON_CAPTURA.search(ruta.stem):
+        if not es_captura(ruta):
             continue
         if datos.st_mtime > limite:
             continue

@@ -44,3 +44,18 @@ cli-tareas/
         ├── __main__.py  python -m tareas
         └── cli.py       Órdenes version y listar
 ```
+
+## Estado de la semana 1
+
+Órdenes comprobadas:
+
+- `tareas --help` y `tareas version`.
+- `tareas listar ~/pruebas-tareas`: tabla con carpetas primero, tamaños legibles y fechas.
+- `tareas listar` sin carpeta: usa la carpeta actual.
+- Carpeta vacía: aviso sin tabla.
+- Ruta inexistente o fichero: mensaje en stderr y código 1.
+- Nombres con corchetes (`[borrador].pdf`) y espacios: se muestran enteros.
+- `uv run python -m tareas version`: funciona.
+- `uv tool install --editable .`: comando disponible desde cualquier carpeta.
+
+Pendiente: conectar el modelo del centro con una clave válida que empiece por `sk-`.

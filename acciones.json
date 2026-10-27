@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "acciones": [
+    {
+      "nombre": "limpiar-temporales",
+      "descripcion": "Borra los ficheros .tmp de Descargas con más de 30 días.",
+      "tipo": "borrar",
+      "origen": "~/Descargas",
+      "filtro": {
+        "patron": "(?i).*\\.tmp$",
+        "mas_antiguo_que_dias": 30
+      },
+      "confirmar": true
+    },
+    {
+      "nombre": "mover-imagenes",
+      "descripcion": "Mueve las imágenes de Descargas a la carpeta de fotos.",
+      "tipo": "mover",
+      "origen": "~/Descargas",
+      "filtro": {
+        "extensiones": [".jpg", ".jpeg", ".png", ".gif", ".webp"]
+      },
+      "destino": "~/Imágenes/Fotos"
+    },
+    {
+      "nombre": "renombrar-capturas",
+      "descripcion": "Renombra las capturas de pantalla con su fecha: 2026-10-27_001.png.",
+      "tipo": "renombrar",
+      "origen": "~/Imágenes/Capturas",
+      "filtro": {
+        "patron": "(?i)^(captura de pantalla|screenshot|screen shot|img_|pxl_).*\\.(png|jpe?g)$"
+      },
+      "plantilla": "{fecha:%Y-%m-%d}_{n:03}{ext}"
+    }
+  ]
+}

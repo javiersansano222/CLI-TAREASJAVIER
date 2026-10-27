@@ -5,6 +5,8 @@ description = "Automatiza tareas repetitivas con ficheros desde la terminal"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "rich>=13",
+    "send2trash>=2.1.0",
     "typer>=0.20",
 ]
 

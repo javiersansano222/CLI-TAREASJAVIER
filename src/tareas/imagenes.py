@@ -129,23 +129,32 @@ def _opciones_guardado(
     return opciones
 
 
-def _comprimir_una(origen: Path, destino: Path, calidad: int) -> int:
+def _comprimir_una(
+    origen: Path,
+    destino: Path,
+    calidad: int,
+    formato_salida: str | None = None,
+) -> int:
     try:
         with Image.open(origen) as original:
             if getattr(original, "is_animated", False):
                 raise TareasError(f"«{origen.name}» es animada; se omite.")
 
-            formato = (original.format or "").upper()
-            if formato not in {"JPEG", "PNG", "WEBP"}:
+            formato_origen = (original.format or "").upper()
+            if formato_origen not in {"JPEG", "PNG", "WEBP"}:
                 raise TareasError(
                     f"«{origen.name}» no tiene un formato compatible."
                 )
-            esperado = FORMATOS_EXTENSION.get(origen.suffix.lower())
-            if formato != esperado:
-                raise TareasError(
-                    f"«{origen.name}» no coincide con su extensión "
-                    f"(contiene {formato})."
-                )
+            if formato_salida is None:
+                esperado = FORMATOS_EXTENSION.get(origen.suffix.lower())
+                if formato_origen != esperado:
+                    raise TareasError(
+                        f"«{origen.name}» no coincide con su extensión "
+                        f"(contiene {formato_origen})."
+                    )
+                formato = formato_origen
+            else:
+                formato = formato_salida
 
             salida = _preparar_salida(original, formato)
             opciones = _opciones_guardado(original, formato, calidad)
@@ -173,14 +182,25 @@ def comprimir(
     carpeta_destino: Path,
     calidad: int,
     simular: bool,
+    convertir_webp: bool = False,
 ) -> list[Resultado]:
     """Comprime las imágenes indicadas y devuelve un resultado por cada una."""
     resultados: list[Resultado] = []
     for imagen in imagenes:
         destino: Path | None = None
         try:
-            destino = _destino_unico(carpeta_destino / imagen.ruta.name)
+            nombre = (
+                f"{imagen.ruta.stem}.webp"
+                if convertir_webp
+                else imagen.ruta.name
+            )
+            destino = _destino_unico(carpeta_destino / nombre)
             if simular:
+                detalle = (
+                    f"WebP, calidad {calidad}"
+                    if convertir_webp
+                    else f"calidad {calidad}"
+                )
                 resultados.append(
                     Resultado(
                         imagen.ruta,
@@ -188,13 +208,18 @@ def comprimir(
                         imagen.tamano,
                         0,
                         "simulado",
-                        f"calidad {calidad}",
+                        detalle,
                     )
                 )
                 continue
 
-            final = _comprimir_una(imagen.ruta, destino, calidad)
-            if final >= imagen.tamano:
+            final = _comprimir_una(
+                imagen.ruta,
+                destino,
+                calidad,
+                "WEBP" if convertir_webp else None,
+            )
+            if not convertir_webp and final >= imagen.tamano:
                 try:
                     destino.unlink(missing_ok=True)
                 except OSError:

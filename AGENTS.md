@@ -3,7 +3,7 @@
 ## Stack y órdenes
 
 - Python 3.12 + Typer + Rich + Pillow, gestionado con uv (src layout, paquete src/tareas).
-- Ejecutar: `tareas` (menú interactivo) · Ayuda: `tareas --help` · Bienvenida: `hola` o `uv run tareas hola` · Cambio de color: `tareas cambio` · Validar config: `uv run tareas validar` · Capturas: `uv run tareas capturas --simular` · Informe: `uv run tareas informe` · Imágenes: `uv run tareas imagenes --comprimir --simular` · Pruebas (semana 4): `uv run pytest`.
+- Ejecutar: `tareas` (menú interactivo) · Ayuda: `tareas --help` · Bienvenida: `hola` o `uv run tareas hola` · Cambio de color: `tareas cambio` · Validar config: `uv run tareas validar` · Capturas: `uv run tareas capturas --simular` · Informe: `uv run tareas informe` · Imágenes: `uv run tareas imagenes --comprimir --simular` · WebP: `uv run tareas imagenes --webp --simular` · Pruebas (semana 4): `uv run pytest`.
 
 ## Normas
 

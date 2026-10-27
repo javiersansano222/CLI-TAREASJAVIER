@@ -56,6 +56,7 @@ tareas informe --carpeta ~/pruebas-tareas/capturas --top 3
 tareas imagenes --carpeta ~/pruebas-tareas/semana4/imagenes
 tareas imagenes --carpeta ~/pruebas-tareas/semana4/imagenes --comprimir --simular
 tareas imagenes --carpeta ~/pruebas-tareas/semana4/imagenes --comprimir --si
+tareas imagenes --carpeta ~/pruebas-tareas/semana4/imagenes --webp --simular
 
 tareas validar
 tareas acciones
@@ -167,7 +168,7 @@ No mueve, renombra ni borra nada. Solo cuenta el primer nivel de la carpeta e
 ignora enlaces simbólicos. `--top` limita las filas de cada tabla y `--horas`
 cambia la antigüedad con la que se cuentan las capturas pendientes.
 
-## Comprimir imágenes
+## Comprimir y convertir imágenes
 
 `tareas imagenes` lista las imágenes JPEG, PNG y WebP del primer nivel de una
 carpeta (por defecto, la de descargas). Con `--comprimir` crea copias más
@@ -179,6 +180,10 @@ tareas imagenes --carpeta ~/pruebas-tareas/semana4/imagenes --comprimir --simula
 tareas imagenes --carpeta ~/pruebas-tareas/semana4/imagenes --comprimir
 tareas imagenes --carpeta ~/pruebas-tareas/semana4/imagenes --comprimir --si
 tareas imagenes --comprimir --calidad 80 --destino ~/pruebas-tareas/comprimidas
+
+tareas imagenes --carpeta ~/pruebas-tareas/semana4/imagenes --webp --simular
+tareas imagenes --carpeta ~/pruebas-tareas/semana4/imagenes --webp --si
+tareas imagenes --webp --calidad 85 --destino ~/pruebas-tareas/webp
 ```
 
 `--calidad` va de 1 a 95 y se aplica a JPEG y WebP; PNG se guarda con
@@ -188,9 +193,13 @@ imagen aparece como «saltada». Si el nombre ya existe en el destino, se usa
 subcarpetas y las imágenes animadas se ignoran o se marcan como no
 compatibles.
 
+Con `--webp` se convierte cada imagen a WebP y la copia se guarda como
+`.webp`, aunque no sea más pequeña. Esta opción implica `--comprimir`; el
+original se conserva y el destino por defecto sigue siendo `comprimidas`.
+
 `--simular` enseña qué se haría sin crear la carpeta de destino ni escribir
-ficheros. Sin `--si`, la compresión real pide confirmación. Usa Pillow para
-leer y guardar las imágenes.
+ficheros. Sin `--si`, la compresión o conversión real pide confirmación. Usa
+Pillow para leer y guardar las imágenes.
 
 ## Esquema de acciones.json
 

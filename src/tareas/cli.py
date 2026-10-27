@@ -115,12 +115,16 @@ def _pintar_resultados(
 def _pintar_imagenes(
     resultados: list[modulo_imagenes.Resultado],
     simular: bool,
+    webp: bool = False,
 ) -> bool:
-    titulo = (
-        "imágenes (SIMULACIÓN: no se ha creado nada)"
-        if simular
-        else "imágenes comprimidas"
-    )
+    if simular:
+        titulo = (
+            "imágenes a WebP (SIMULACIÓN: no se ha creado nada)"
+            if webp
+            else "imágenes (SIMULACIÓN: no se ha creado nada)"
+        )
+    else:
+        titulo = "imágenes convertidas a WebP" if webp else "imágenes comprimidas"
     tabla = Table(title=titulo)
     tabla.add_column("Imagen")
     tabla.add_column("Destino")
@@ -173,8 +177,9 @@ def _pintar_imagenes(
     simulados = sum(resultado.estado == "simulado" for resultado in resultados)
     saltados = sum(resultado.estado == "saltado" for resultado in resultados)
     errores = sum(resultado.estado == "error" for resultado in resultados)
+    etiqueta = "convertidas" if webp else "comprimidas"
     consola.print(
-        f"Imágenes: {len(resultados)} · comprimidas: {hechos} · "
+        f"Imágenes: {len(resultados)} · {etiqueta}: {hechos} · "
         f"simuladas: {simulados} · saltadas: {saltados} · errores: {errores}"
     )
     if simular:
@@ -416,6 +421,10 @@ def imagenes(
         bool,
         typer.Option("--comprimir", help="Crea copias comprimidas sin tocar los originales."),
     ] = False,
+    webp: Annotated[
+        bool,
+        typer.Option("--webp", help="Convierte las copias a WebP (implica --comprimir)."),
+    ] = False,
     destino: Annotated[
         Path | None,
         typer.Option("--destino", help="Carpeta de salida (por defecto, comprimidas)."),
@@ -436,6 +445,8 @@ def imagenes(
     """Lista o comprime imágenes de una carpeta."""
     if not modulo_imagenes.CALIDAD_MIN <= calidad <= modulo_imagenes.CALIDAD_MAX:
         raise typer.BadParameter("debe estar entre 1 y 95", param_hint="--calidad")
+    if webp:
+        comprimir = True
 
     ruta = (carpeta or modulo_capturas.carpeta_descargas()).expanduser()
     try:
@@ -493,8 +504,9 @@ def imagenes(
 
     if not simular and not si:
         texto = "imagen" if len(lista) == 1 else "imágenes"
+        accion = "Convertir" if webp else "Comprimir"
         typer.confirm(
-            f"¿Comprimir {len(lista)} {texto} en «{carpeta_destino}»?",
+            f"¿{accion} {len(lista)} {texto} en «{carpeta_destino}»?",
             abort=True,
         )
 
@@ -503,8 +515,9 @@ def imagenes(
         carpeta_destino,
         calidad,
         simular,
+        convertir_webp=webp,
     )
-    if not _pintar_imagenes(resultados, simular):
+    if not _pintar_imagenes(resultados, simular, webp):
         raise typer.Exit(code=1)
 
 

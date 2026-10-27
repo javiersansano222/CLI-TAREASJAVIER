@@ -434,3 +434,39 @@ hacer con la transparencia, los metadatos y los ficheros que no mejoran; tambié
 conviene separar la simulación de la escritura y calcular el destino antes de
 tocar el disco. Pillow permite conservar EXIF e ICC, pero no todos los formatos
 aceptan las mismas opciones.
+
+## 2026-10-27 · Convertir imágenes a WebP
+
+**Prompt de referencia:**
+
+> Funciona, digo convertir una imagen en WebP.
+
+**Interpretación:** no bastaba con comprimir manteniendo el formato; también
+quería poder convertir las imágenes a WebP.
+
+**Qué implementé:**
+
+- La opción `--webp` en `tareas imagenes`; implica `--comprimir`.
+- Las copias se guardan con extensión `.webp` y el nombre original sin la
+  extensión anterior.
+- La conversión se guarda aunque el fichero resultante no sea más pequeño; el
+  original nunca se modifica.
+- Se conservan la transparencia, el EXIF y el perfil ICC cuando WebP lo admite.
+- Nombres libres con ` (1)`, ` (2)`… y confirmación antes de convertir de
+  verdad, igual que en la compresión.
+- Documentación en el README y actualización de `AGENTS.md`.
+
+**Pruebas manuales (en `~/pruebas-tareas/semana4/imagenes`):**
+
+- `--webp --simular` muestra destinos `.webp` y no crea nada.
+- Conversión real de JPEG, PNG y WebP: los tres quedan en formato WebP.
+- El PNG con transparencia se guarda como WebP RGBA.
+- Los originales mantienen nombre, formato y tamaño.
+- `rota.jpg` genera un error por fichero y la orden sale con código 1.
+- `--webp` sin `--comprimir` ejecuta la conversión; `--calidad` y `--destino`
+  funcionan igual que en la compresión.
+- Ejecución repetida: nunca se sobrescribe un `.webp` existente.
+
+**Qué aprendí:** convertir no es lo mismo que comprimir: una conversión puede
+aumentar el tamaño y aun así ser el resultado deseado. Por eso `--webp` guarda
+siempre la copia, mientras que `--comprimir` descarta las que no mejoran.

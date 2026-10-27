@@ -58,4 +58,4 @@ cli-tareas/
 - `uv run python -m tareas version`: funciona.
 - `uv tool install --editable .`: comando disponible desde cualquier carpeta.
 
-Pendiente: conectar el modelo del centro con una clave válida que empiece por `sk-`.
+Modelo del centro: comprobado con `opencode run`; responde correctamente con la clave configurada en `CENTRO_IA_KEY`.

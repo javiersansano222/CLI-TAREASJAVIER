@@ -3,7 +3,7 @@
 ## 2026-10-27 · Primera orden: listar
 
 **Herramienta:** OpenCode 1.18.35 · modelo configurado: `simarro/Qwen38-DualSpark-medium`.
-La conexión con el servidor del centro falló porque la clave actual no empieza por `sk-`; queda pendiente de corregir.
+La conexión con el servidor del centro funciona con la clave configurada en `CENTRO_IA_KEY` (fuera del repo).
 
 **Prompt de referencia (agente plan):**
 

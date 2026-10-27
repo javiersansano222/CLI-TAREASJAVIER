@@ -353,3 +353,36 @@ sesión interactiva con todas las órdenes, no mostrar solo la ayuda.
 **Qué aprendí:** reutilizar el `app` de Typer dentro del bucle evita duplicar
 la lista de opciones y hace que las órdenes futuras funcionen sin tocar el
 menú.
+
+## 2026-10-27 · Comando `cambio` para pintar el menú en rojo
+
+**Prompt de referencia:**
+
+> Quiero crear un comando en `tareas>` que se llame `cambio` y me cambie el
+> estilo de terminal a color rojo.
+
+**Interpretación:** el color debe afectar al menú interactivo y al prompt
+`tareas>`, no al tema ni al fondo de la ventana de la terminal.
+
+**Qué implementé:**
+
+- Estado de color en `src/tareas/menu.py`, con soporte para rojo, normal, azul,
+  verde y amarillo.
+- La orden `cambio`, que por defecto pone el menú en rojo.
+- `cambio normal` restaura el color habitual.
+- El menú se vuelve a pintar al cambiar de color y el prompt usa el color
+  activo.
+- `tareas cambio` desde fuera abre directamente el menú con ese color.
+- El comando aparece automáticamente en la tabla de órdenes.
+
+**Pruebas manuales:**
+
+- `printf 'cambio\nsalir\n' | FORCE_COLOR=1 tareas`: genera el panel y el
+  prompt con el código ANSI rojo (`31`).
+- `cambio normal` vuelve al cian brillante (`96`).
+- `cambio` dentro del menú no abre un menú anidado; vuelve a pintar el actual.
+- `cambio morado` muestra un error y el menú sigue abierto.
+- `tareas cambio` y `tareas cambio azul` abren el menú con el color elegido.
+
+**Qué aprendí:** separar el estado del color de la pintura del menú permite
+repintarlo sin reiniciar y mantiene el cambio limitado a la sesión interactiva.

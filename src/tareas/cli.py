@@ -16,7 +16,7 @@ from tareas import informe as modulo_informe
 from tareas.acciones import Resultado
 from tareas.bienvenida import mostrar_bienvenida
 from tareas.errores import TareasError
-from tareas.menu import menu_interactivo
+from tareas.menu import cambiar_color, color_actual, menu_activo, menu_interactivo
 from tareas.motor import Motor
 
 app = typer.Typer(
@@ -138,6 +138,24 @@ def version() -> None:
 def hola() -> None:
     """Muestra la bienvenida personalizada de la terminal."""
     mostrar_bienvenida()
+
+
+@app.command()
+def cambio(
+    color: Annotated[
+        str,
+        typer.Argument(help="Color del menú: rojo, normal, azul, verde o amarillo."),
+    ] = "rojo",
+) -> None:
+    """Cambia el color del menú interactivo."""
+    try:
+        elegido = cambiar_color(color)
+    except ValueError as error:
+        raise typer.BadParameter(str(error), param_hint="color") from None
+    actual = color_actual()
+    consola.print(f"[{actual}]✔ Color del menú cambiado a {elegido}.[/{actual}]")
+    if not menu_activo():
+        menu_interactivo(app)
 
 
 @app.command()

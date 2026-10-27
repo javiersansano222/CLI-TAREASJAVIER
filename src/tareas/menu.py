@@ -13,6 +13,41 @@ from rich.table import Table
 
 consola = Console()
 
+COLORES = {
+    "rojo": ("red", "rojo"),
+    "normal": ("bright_cyan", "normal"),
+    "cian": ("bright_cyan", "normal"),
+    "cyan": ("bright_cyan", "normal"),
+    "azul": ("blue", "azul"),
+    "verde": ("green", "verde"),
+    "amarillo": ("yellow", "amarillo"),
+}
+_color_actual = "bright_cyan"
+_menu_activo = False
+
+
+def color_actual() -> str:
+    """Devuelve el color Rich que está usando el menú."""
+    return _color_actual
+
+
+def menu_activo() -> bool:
+    """Indica si el menú interactivo está abierto."""
+    return _menu_activo
+
+
+def cambiar_color(nombre: str) -> str:
+    """Cambia el color del menú y devuelve el nombre elegido."""
+    clave = nombre.strip().lower()
+    if clave not in COLORES:
+        raise ValueError(
+            "color no válido; usa rojo, normal, azul, verde o amarillo"
+        )
+    global _color_actual
+    codigo, etiqueta = COLORES[clave]
+    _color_actual = codigo
+    return etiqueta
+
 
 def _nombre_orden(info: Any) -> str:
     return info.name or info.callback.__name__
@@ -38,20 +73,24 @@ def _ejecutar(app: typer.Typer, partes: list[str]) -> None:
         pass
 
 
-def menu_interactivo(app: typer.Typer) -> None:
-    """Muestra las órdenes disponibles y ejecuta la que escriba el usuario."""
+def _pintar_menu(app: typer.Typer) -> None:
+    color = color_actual()
     consola.print(
         Panel.fit(
-            "[bold]Menú de tareas[/bold]\n"
+            f"[bold {color}]Menú de tareas[/bold {color}]\n"
             "Escribe una orden y sus opciones, por ejemplo:\n"
-            "  [cyan]capturas --simular[/cyan]\n"
-            "  [cyan]informe --top 3[/cyan]\n"
-            "  [cyan]salir[/cyan] para terminar",
-            border_style="bright_cyan",
+            f"  [{color}]capturas --simular[/{color}]\n"
+            f"  [{color}]informe --top 3[/{color}]\n"
+            f"  [{color}]salir[/{color}] para terminar",
+            border_style=color,
         )
     )
 
-    tabla = Table(title="Órdenes disponibles", header_style="bold cyan")
+    tabla = Table(
+        title="Órdenes disponibles",
+        title_style=f"bold {color}",
+        header_style=f"bold {color}",
+    )
     tabla.add_column("Orden", style="bold")
     tabla.add_column("Qué hace")
     for info in app.registered_commands:
@@ -60,9 +99,15 @@ def menu_interactivo(app: typer.Typer) -> None:
         tabla.add_row(_nombre_orden(info), _descripcion_orden(info))
     consola.print(tabla)
 
+
+def _bucle_menu(app: typer.Typer) -> None:
+    _pintar_menu(app)
+    color_anterior = color_actual()
+
     while True:
+        color = color_actual()
         try:
-            linea = consola.input("[bold cyan]tareas>[/bold cyan] ").strip()
+            linea = consola.input(f"[bold {color}]tareas>[/bold {color}] ").strip()
         except (EOFError, KeyboardInterrupt):
             consola.print()
             break
@@ -86,3 +131,17 @@ def menu_interactivo(app: typer.Typer) -> None:
             partes = partes[1:]
         if partes:
             _ejecutar(app, partes)
+            if color_actual() != color_anterior:
+                color_anterior = color_actual()
+                consola.print()
+                _pintar_menu(app)
+
+
+def menu_interactivo(app: typer.Typer) -> None:
+    """Muestra las órdenes disponibles y ejecuta la que escriba el usuario."""
+    global _menu_activo
+    _menu_activo = True
+    try:
+        _bucle_menu(app)
+    finally:
+        _menu_activo = False

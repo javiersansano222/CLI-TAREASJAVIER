@@ -7,7 +7,7 @@ Mi herramienta de línea de órdenes para automatizar tareas repetitivas con fic
 1. **Problema:** cada semana pierdo tiempo ordenando Descargas, limpiando temporales antiguos y poniendo nombre a las capturas a mano.
 2. **Para quién:** para mí y para mis compañeros de clase.
 3. **Cómo se usa:** `tareas ORDEN [CARPETA] [opciones]` desde cualquier terminal.
-4. **Órdenes:** `--help`, `version`, `hola`, `listar`, `capturas`, `informe`, `acciones`, `validar` y `ejecutar`.
+4. **Órdenes:** `--help`, `version`, `hola`, `cambio`, `listar`, `capturas`, `informe`, `acciones`, `validar` y `ejecutar`.
 5. **Mis 3 acciones:** limpiar temporales de más de 30 días, mover imágenes a `~/Imágenes/Fotos` y renombrar capturas por fecha.
 6. **Nunca hará:** borrar sin pedir confirmación (salvo `--si`) ni tocar ficheros fuera del origen y destino configurados.
 7. **Plataformas:** Linux primero; también Windows y macOS.
@@ -41,6 +41,7 @@ uv tool update-shell   # si «tareas» no aparece en el PATH
 ```bash
 tareas                  # abre el menú interactivo
 tareas --help           # ayuda general
+tareas cambio           # abre el menú en rojo
 
 hola
 tareas hola
@@ -78,6 +79,7 @@ disponibles. Desde ahí se escribe la orden igual que en la terminal:
 ```text
 tareas> version
 tareas> hola
+tareas> cambio
 tareas> capturas --simular
 tareas> informe --top 3
 tareas> salir
@@ -86,6 +88,27 @@ tareas> salir
 También se pueden usar `ayuda` o `?` para ver la ayuda, y `salir`, `exit`,
 `quit` o `q` para terminar. El menú lee las órdenes registradas en Typer, así
 que las que se añadan en el futuro aparecen automáticamente.
+
+## Cambiar el color del menú
+
+Dentro del menú, `cambio` pone el panel, las tablas y el prompt `tareas>` en
+rojo. `cambio normal` vuelve al color habitual:
+
+```text
+tareas> cambio
+tareas> cambio normal
+```
+
+También admite `azul`, `verde` y `amarillo`. Desde fuera se puede abrir el
+menú directamente con el color elegido:
+
+```bash
+tareas cambio
+tareas cambio azul
+```
+
+El cambio afecta al menú de esa sesión, no al tema ni al fondo de la ventana de
+la terminal.
 
 ## Bienvenida personalizada
 
@@ -262,7 +285,8 @@ Modelo del centro: comprobado con `opencode run`; responde correctamente con la 
 ## Estado del menú interactivo
 
 - `tareas` sin argumentos abre el menú; `tareas --help` sigue mostrando la ayuda.
-- Desde el menú funcionan `version`, `hola`, `listar`, `capturas`, `informe`, `validar`, `acciones` y `ejecutar`.
+- Desde el menú funcionan `version`, `hola`, `cambio`, `listar`, `capturas`, `informe`, `validar`, `acciones` y `ejecutar`.
+- `cambio` pone el menú en rojo y vuelve a pintarlo; `cambio normal` lo restaura.
 - `salir`, `exit`, `quit` y `q` cierran el menú; `ayuda` y `?` muestran la ayuda.
 - También acepta el prefijo `tareas`, por ejemplo `tareas version`.
 - Las órdenes nuevas aparecen en el menú automáticamente.

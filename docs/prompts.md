@@ -386,3 +386,51 @@ menú.
 
 **Qué aprendí:** separar el estado del color de la pintura del menú permite
 repintarlo sin reiniciar y mantiene el cambio limitado a la sesión interactiva.
+
+## 2026-10-27 · Orden `imagenes`: comprimir copias sin tocar los originales
+
+**Herramienta:** OpenCode 1.18.35 · modelo configurado: `simarro/Qwen38-DualSpark-medium`.
+
+**Prompt de referencia:**
+
+> ¿Qué te parece la idea 11? Quiero que hagamos también la 11:
+> `tareas imagenes --comprimir`.
+
+**Interpretación:** añadir una orden que liste imágenes y, con `--comprimir`,
+cree copias más ligeras en una carpeta de destino sin modificar los originales.
+
+**Qué implementé:**
+
+- `src/tareas/imagenes.py` con la selección de JPEG, PNG y WebP del primer nivel,
+  ignorando enlaces simbólicos y subcarpetas.
+- `Pillow 13.0.0` como dependencia para leer y guardar las imágenes.
+- La orden `tareas imagenes` con `--carpeta`, `--comprimir`, `--destino`,
+  `--calidad`, `--simular` y `--si`.
+- Destino por defecto `comprimidas` dentro de la carpeta de origen; nombres
+  libres con ` (1)`, ` (2)`… si ya existen.
+- JPEG y WebP con calidad configurable (75 por defecto); PNG con compresión sin
+  pérdida. Se conservan EXIF y perfil ICC cuando el formato lo permite.
+- Si la copia no reduce el tamaño, se borra y la imagen aparece como «saltada».
+- Confirmación antes de comprimir de verdad y código 1 si alguna imagen falla.
+- La orden aparece automáticamente en el menú interactivo.
+- Documentación en el README y actualización de `AGENTS.md`.
+
+**Pruebas manuales (en `~/pruebas-tareas/semana4/imagenes`):**
+
+- Listado de JPEG, PNG y WebP; `nota.txt` y un enlace simbólico quedan fuera.
+- `--simular` no crea la carpeta `comprimidas`.
+- Compresión real: JPEG reducido un 53 %, WebP un 42 % y PNG un 1 %; los
+  originales conservan su tamaño.
+- Un `rota.jpg` inválido genera un error por fichero y la orden sale con
+  código 1 sin traceback.
+- Segunda ejecución: la simulación reserva `foto (1).jpg`, `captura (1).png` e
+  `imagen (1).webp`; nunca se sobrescribe.
+- Calidad `0`, destino igual al origen y carpeta vacía: mensajes claros y
+  código 2 o 0 según corresponda.
+- `imagenes --comprimir --simular` funciona dentro del menú interactivo.
+
+**Qué aprendí:** comprimir no es solo llamar a `save()`: hay que decidir qué
+hacer con la transparencia, los metadatos y los ficheros que no mejoran; también
+conviene separar la simulación de la escritura y calcular el destino antes de
+tocar el disco. Pillow permite conservar EXIF e ICC, pero no todos los formatos
+aceptan las mismas opciones.

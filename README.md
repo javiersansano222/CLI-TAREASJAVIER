@@ -7,12 +7,12 @@ Mi herramienta de línea de órdenes para automatizar tareas repetitivas con fic
 1. **Problema:** cada semana pierdo tiempo ordenando Descargas, limpiando temporales antiguos y poniendo nombre a las capturas a mano.
 2. **Para quién:** para mí y para mis compañeros de clase.
 3. **Cómo se usa:** `tareas ORDEN [CARPETA] [opciones]` desde cualquier terminal.
-4. **Órdenes:** `--help`, `version`, `hola`, `cambio`, `listar`, `capturas`, `informe`, `acciones`, `validar` y `ejecutar`.
+4. **Órdenes:** `--help`, `version`, `hola`, `cambio`, `listar`, `capturas`, `informe`, `imagenes`, `acciones`, `validar` y `ejecutar`.
 5. **Mis 3 acciones:** limpiar temporales de más de 30 días, mover imágenes a `~/Imágenes/Fotos` y renombrar capturas por fecha.
 6. **Nunca hará:** borrar sin pedir confirmación (salvo `--si`) ni tocar ficheros fuera del origen y destino configurados.
 7. **Plataformas:** Linux primero; también Windows y macOS.
 8. **Códigos de salida:** 0 bien · 1 fallo al ejecutar · 2 uso incorrecto · 3 configuración inválida.
-9. **Seguridad:** toda acción y la orden `capturas` se pueden simular con `--simular`; nunca se sobrescribe un fichero ni un enlace existente.
+9. **Seguridad:** toda acción, `capturas` e `imagenes` se pueden simular con `--simular`; nunca se sobrescribe un fichero ni un enlace existente y las imágenes siempre se guardan como copias.
 10. **Instalación:** `uv tool install --editable .` (se completa en la semana 4).
 
 ## Puesta en marcha
@@ -53,6 +53,10 @@ tareas capturas --carpeta ~/pruebas-tareas/capturas --horas 5
 tareas informe
 tareas informe --carpeta ~/pruebas-tareas/capturas --top 3
 
+tareas imagenes --carpeta ~/pruebas-tareas/semana4/imagenes
+tareas imagenes --carpeta ~/pruebas-tareas/semana4/imagenes --comprimir --simular
+tareas imagenes --carpeta ~/pruebas-tareas/semana4/imagenes --comprimir --si
+
 tareas validar
 tareas acciones
 tareas ejecutar limpiar-temporales --simular
@@ -82,6 +86,7 @@ tareas> hola
 tareas> cambio
 tareas> capturas --simular
 tareas> informe --top 3
+tareas> imagenes --comprimir --simular
 tareas> salir
 ```
 
@@ -161,6 +166,31 @@ tareas informe --horas 8
 No mueve, renombra ni borra nada. Solo cuenta el primer nivel de la carpeta e
 ignora enlaces simbólicos. `--top` limita las filas de cada tabla y `--horas`
 cambia la antigüedad con la que se cuentan las capturas pendientes.
+
+## Comprimir imágenes
+
+`tareas imagenes` lista las imágenes JPEG, PNG y WebP del primer nivel de una
+carpeta (por defecto, la de descargas). Con `--comprimir` crea copias más
+ligeras en `comprimidas` sin modificar ni borrar los originales.
+
+```bash
+tareas imagenes --carpeta ~/pruebas-tareas/semana4/imagenes
+tareas imagenes --carpeta ~/pruebas-tareas/semana4/imagenes --comprimir --simular
+tareas imagenes --carpeta ~/pruebas-tareas/semana4/imagenes --comprimir
+tareas imagenes --carpeta ~/pruebas-tareas/semana4/imagenes --comprimir --si
+tareas imagenes --comprimir --calidad 80 --destino ~/pruebas-tareas/comprimidas
+```
+
+`--calidad` va de 1 a 95 y se aplica a JPEG y WebP; PNG se guarda con
+compresión sin pérdida. Si una copia no reduce el tamaño, se descarta y la
+imagen aparece como «saltada». Si el nombre ya existe en el destino, se usa
+` (1)`, ` (2)`… y nunca se sobrescribe nada. Los enlaces simbólicos, las
+subcarpetas y las imágenes animadas se ignoran o se marcan como no
+compatibles.
+
+`--simular` enseña qué se haría sin crear la carpeta de destino ni escribir
+ficheros. Sin `--si`, la compresión real pide confirmación. Usa Pillow para
+leer y guardar las imágenes.
 
 ## Esquema de acciones.json
 
@@ -253,6 +283,7 @@ cli-tareas/
         ├── capturas.py        Detecta capturas y las manda a la papelera
         ├── cli.py             Órdenes, opciones y salida
         ├── config.py          Carga y valida acciones.json
+        ├── imagenes.py        Comprime imágenes sin tocar los originales
         ├── informe.py         Cuenta ficheros, tipos y capturas pendientes
         ├── menu.py            Menú interactivo de todas las órdenes
         ├── errores.py         Excepciones propias

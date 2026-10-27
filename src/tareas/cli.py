@@ -12,6 +12,7 @@ from rich.table import Table
 from tareas import __version__
 from tareas import capturas as modulo_capturas
 from tareas import config as configuracion
+from tareas import imagenes as modulo_imagenes
 from tareas import informe as modulo_informe
 from tareas.acciones import Resultado
 from tareas.bienvenida import mostrar_bienvenida
@@ -105,6 +106,76 @@ def _pintar_resultados(
     consola.print(
         f"Ficheros: {len(resultados)} · hechos: {hechos} · "
         f"simulados: {simulados} · saltados: {saltados} · errores: {errores}"
+    )
+    if simular:
+        consola.print("Para hacerlo de verdad, repite la orden sin --simular.")
+    return errores == 0
+
+
+def _pintar_imagenes(
+    resultados: list[modulo_imagenes.Resultado],
+    simular: bool,
+) -> bool:
+    titulo = (
+        "imágenes (SIMULACIÓN: no se ha creado nada)"
+        if simular
+        else "imágenes comprimidas"
+    )
+    tabla = Table(title=titulo)
+    tabla.add_column("Imagen")
+    tabla.add_column("Destino")
+    tabla.add_column("Original", justify="right")
+    tabla.add_column("Final", justify="right")
+    tabla.add_column("Ahorro", justify="right")
+    tabla.add_column("Estado")
+
+    for resultado in resultados:
+        final_texto = (
+            tamano_legible(resultado.tamano_final)
+            if resultado.tamano_final
+            else "—"
+        )
+        if (
+            resultado.estado == "hecho"
+            and resultado.tamano_final
+            and resultado.tamano_original
+        ):
+            ahorro = (
+                (resultado.tamano_original - resultado.tamano_final)
+                / resultado.tamano_original
+                * 100
+            )
+            ahorro_texto = f"{ahorro:.0f} %"
+        else:
+            ahorro_texto = "—"
+        destino = (
+            str(resultado.destino) if resultado.destino is not None else "—"
+        )
+        tabla.add_row(
+            escape(resultado.origen.name),
+            escape(destino),
+            tamano_legible(resultado.tamano_original),
+            final_texto,
+            ahorro_texto,
+            resultado.estado,
+        )
+
+    consola.print(tabla)
+
+    for resultado in resultados:
+        if resultado.estado == "error":
+            consola_err.print(
+                f"[red]✘ {escape(resultado.origen.name)}: "
+                f"{escape(resultado.detalle)}[/red]"
+            )
+
+    hechos = sum(resultado.estado == "hecho" for resultado in resultados)
+    simulados = sum(resultado.estado == "simulado" for resultado in resultados)
+    saltados = sum(resultado.estado == "saltado" for resultado in resultados)
+    errores = sum(resultado.estado == "error" for resultado in resultados)
+    consola.print(
+        f"Imágenes: {len(resultados)} · comprimidas: {hechos} · "
+        f"simuladas: {simulados} · saltadas: {saltados} · errores: {errores}"
     )
     if simular:
         consola.print("Para hacerlo de verdad, repite la orden sin --simular.")
@@ -333,6 +404,108 @@ def informe(
             fecha_legible(fichero.modificado),
         )
     consola.print(tabla_grandes)
+
+
+@app.command()
+def imagenes(
+    carpeta: Annotated[
+        Path | None,
+        typer.Option("--carpeta", help="Carpeta de imágenes (por defecto, descargas)."),
+    ] = None,
+    comprimir: Annotated[
+        bool,
+        typer.Option("--comprimir", help="Crea copias comprimidas sin tocar los originales."),
+    ] = False,
+    destino: Annotated[
+        Path | None,
+        typer.Option("--destino", help="Carpeta de salida (por defecto, comprimidas)."),
+    ] = None,
+    calidad: Annotated[
+        int,
+        typer.Option("--calidad", help="Calidad JPEG/WebP (1-95)."),
+    ] = 75,
+    simular: Annotated[
+        bool,
+        typer.Option("--simular", help="Enseña qué haría sin crear ficheros."),
+    ] = False,
+    si: Annotated[
+        bool,
+        typer.Option("--si", help="No pedir confirmación."),
+    ] = False,
+) -> None:
+    """Lista o comprime imágenes de una carpeta."""
+    if not modulo_imagenes.CALIDAD_MIN <= calidad <= modulo_imagenes.CALIDAD_MAX:
+        raise typer.BadParameter("debe estar entre 1 y 95", param_hint="--calidad")
+
+    ruta = (carpeta or modulo_capturas.carpeta_descargas()).expanduser()
+    try:
+        lista = modulo_imagenes.seleccionar(ruta)
+    except TareasError as error:
+        _mostrar_error(error)
+
+    if not comprimir:
+        if not lista:
+            consola.print(f"No hay imágenes compatibles en «{escape(str(ruta))}».")
+            return
+        tabla = Table(title=f"Imágenes en {escape(str(ruta.resolve()))}")
+        tabla.add_column("Imagen")
+        tabla.add_column("Formato")
+        tabla.add_column("Tamaño", justify="right")
+        for imagen in lista:
+            tabla.add_row(
+                escape(imagen.ruta.name),
+                imagen.ruta.suffix.lower().lstrip("."),
+                tamano_legible(imagen.tamano),
+            )
+        consola.print(tabla)
+        consola.print(
+            f"Total: {len(lista)} imágenes · "
+            f"{tamano_legible(sum(imagen.tamano for imagen in lista))}"
+        )
+        consola.print("Usa [bold]--comprimir[/bold] para crear copias comprimidas.")
+        return
+
+    carpeta_destino = (
+        destino or ruta / modulo_imagenes.NOMBRE_DESTINO
+    ).expanduser()
+    if (
+        carpeta_destino.exists() or carpeta_destino.is_symlink()
+    ) and not carpeta_destino.is_dir():
+        raise typer.BadParameter(
+            "debe ser una carpeta",
+            param_hint="--destino",
+        )
+    try:
+        misma_carpeta = carpeta_destino.resolve() == ruta.resolve()
+    except (OSError, RuntimeError):
+        raise typer.BadParameter(
+            "no se puede resolver la ruta de destino",
+            param_hint="--destino",
+        ) from None
+    if misma_carpeta:
+        raise typer.BadParameter(
+            "no puede ser la misma carpeta que el origen",
+            param_hint="--destino",
+        )
+    if not lista:
+        consola.print(f"No hay imágenes compatibles en «{escape(str(ruta))}».")
+        return
+
+    if not simular and not si:
+        texto = "imagen" if len(lista) == 1 else "imágenes"
+        typer.confirm(
+            f"¿Comprimir {len(lista)} {texto} en «{carpeta_destino}»?",
+            abort=True,
+        )
+
+    resultados = modulo_imagenes.comprimir(
+        lista,
+        carpeta_destino,
+        calidad,
+        simular,
+    )
+    if not _pintar_imagenes(resultados, simular):
+        raise typer.Exit(code=1)
 
 
 @app.command()

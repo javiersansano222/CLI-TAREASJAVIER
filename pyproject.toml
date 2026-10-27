@@ -12,6 +12,7 @@ dependencies = [
 
 [project.scripts]
 tareas = "tareas.cli:app"
+hola = "tareas.bienvenida:main"
 
 [build-system]
 requires = ["hatchling"]

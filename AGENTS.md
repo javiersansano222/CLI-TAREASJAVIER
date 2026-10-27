@@ -3,7 +3,7 @@
 ## Stack y órdenes
 
 - Python 3.12 + Typer + Rich, gestionado con uv (src layout, paquete src/tareas).
-- Ejecutar: `uv run tareas --help` · Validar config: `uv run tareas validar` · Capturas: `uv run tareas capturas --simular` · Informe: `uv run tareas informe` · Pruebas (semana 4): `uv run pytest`.
+- Ejecutar: `uv run tareas --help` · Bienvenida: `hola` o `uv run tareas hola` · Validar config: `uv run tareas validar` · Capturas: `uv run tareas capturas --simular` · Informe: `uv run tareas informe` · Pruebas (semana 4): `uv run pytest`.
 
 ## Normas
 

@@ -181,3 +181,38 @@ la ejecución real para poder probar sin riesgo.
 cortas; conviene reutilizar la detección de capturas para que el informe y la
 limpieza no discrepen. También aprendí que hasta una orden de solo lectura debe
 controlar rutas inexistentes, enlaces y fechas raras para no romper la salida.
+
+## 2026-10-27 · Bienvenida `hola` con banner ASCII
+
+**Herramienta:** OpenCode 1.18.35 · modelo configurado: `simarro/Qwen38-DualSpark-medium`.
+
+**Prompt de referencia:**
+
+> Añade una orden `hola` que muestre un banner ASCII generado por la propia
+> terminal y el mensaje «Bienvenido a mi terminal personalizado», parecido al
+> arranque de OpenCode. Quiero poder ejecutarlo como `tareas hola` y también
+> como `hola` directamente.
+>
+> Criterio de aceptación:
+> - Banner legible en una terminal normal.
+> - Mensaje centrado y en español.
+> - Sin dependencias nuevas.
+> - Sin tocar `acciones.json` ni ningún fichero.
+
+**Qué implementé:**
+
+- `src/tareas/bienvenida.py` con el banner y un `main()` para el ejecutable.
+- La orden `tareas hola`.
+- El script `hola` en `pyproject.toml`, instalado con el resto de la herramienta.
+- Documentación en el README y actualización de `AGENTS.md`.
+
+**Pruebas manuales:**
+
+- `uv run tareas hola`.
+- `hola` tras reinstalar con `uv tool install --editable .`.
+- `tareas --help` muestra la orden.
+- Comprobado que no lee ni modifica `acciones.json`.
+
+**Qué aprendí:** un entry point de `pyproject.toml` permite crear un comando
+corto (`hola`) que reutiliza el mismo código que la CLI principal sin duplicar
+la lógica.

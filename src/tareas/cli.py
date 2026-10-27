@@ -14,6 +14,7 @@ from tareas import capturas as modulo_capturas
 from tareas import config as configuracion
 from tareas import informe as modulo_informe
 from tareas.acciones import Resultado
+from tareas.bienvenida import mostrar_bienvenida
 from tareas.errores import TareasError
 from tareas.motor import Motor
 
@@ -128,6 +129,12 @@ def principal(
 def version() -> None:
     """Muestra la versión instalada."""
     consola.print(f"tareas {__version__}")
+
+
+@app.command()
+def hola() -> None:
+    """Muestra la bienvenida personalizada de la terminal."""
+    mostrar_bienvenida()
 
 
 @app.command()

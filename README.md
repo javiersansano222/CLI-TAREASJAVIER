@@ -7,7 +7,7 @@ Mi herramienta de línea de órdenes para automatizar tareas repetitivas con fic
 1. **Problema:** cada semana pierdo tiempo ordenando Descargas, limpiando temporales antiguos y poniendo nombre a las capturas a mano.
 2. **Para quién:** para mí y para mis compañeros de clase.
 3. **Cómo se usa:** `tareas ORDEN [CARPETA] [opciones]` desde cualquier terminal.
-4. **Órdenes:** `--help`, `version`, `listar`, `capturas`, `informe`, `acciones`, `validar` y `ejecutar`.
+4. **Órdenes:** `--help`, `version`, `hola`, `listar`, `capturas`, `informe`, `acciones`, `validar` y `ejecutar`.
 5. **Mis 3 acciones:** limpiar temporales de más de 30 días, mover imágenes a `~/Imágenes/Fotos` y renombrar capturas por fecha.
 6. **Nunca hará:** borrar sin pedir confirmación (salvo `--si`) ni tocar ficheros fuera del origen y destino configurados.
 7. **Plataformas:** Linux primero; también Windows y macOS.
@@ -39,6 +39,9 @@ uv tool update-shell   # si «tareas» no aparece en el PATH
 ## Uso rápido
 
 ```bash
+hola
+tareas hola
+
 tareas capturas --simular
 tareas capturas
 tareas capturas --carpeta ~/pruebas-tareas/capturas --horas 5
@@ -62,6 +65,18 @@ tareas --config ~/pruebas-tareas/acciones.json acciones
 
 `--config` es una opción global y va **antes** de la orden. Por defecto se lee
 `./acciones.json`, en la carpeta desde la que se lanza la orden.
+
+## Bienvenida personalizada
+
+La orden `hola` pinta un banner ASCII y el mensaje de bienvenida. Se puede usar
+dentro de la CLI o directamente como ejecutable:
+
+```bash
+tareas hola
+hola
+```
+
+No necesita `acciones.json` ni toca ningún fichero.
 
 ## Capturas de pantalla
 
@@ -189,6 +204,7 @@ cli-tareas/
     └── tareas/
         ├── __init__.py        Versión del paquete
         ├── __main__.py        python -m tareas
+        ├── bienvenida.py      Banner ASCII de bienvenida
         ├── capturas.py        Detecta capturas y las manda a la papelera
         ├── cli.py             Órdenes, opciones y salida
         ├── config.py          Carga y valida acciones.json
@@ -212,6 +228,13 @@ cli-tareas/
 - `uv tool install --editable .`: comando disponible desde cualquier carpeta.
 
 Modelo del centro: comprobado con `opencode run`; responde correctamente con la clave configurada en `CENTRO_IA_KEY`.
+
+## Estado de la bienvenida
+
+- `tareas hola` y el ejecutable directo `hola` muestran el banner ASCII.
+- El mensaje «Bienvenido a mi terminal personalizado» aparece centrado.
+- Funciona sin `acciones.json` y no modifica ningún fichero.
+- Comprobado en terminal normal y en la instalación global.
 
 ## Estado de la semana 2
 

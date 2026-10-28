@@ -510,3 +510,28 @@ papelera, con simulación, antigüedad configurable y confirmación.
 no basta con la extensión, porque un `.tmp` recién creado puede estar en uso.
 También conviene reutilizar la papelera y la tabla de resultados en lugar de
 duplicar lógica destructiva.
+
+## 2026-10-28 · Acción `copiar-instaladores` añadida siguiendo `/nueva-accion`
+
+**Prompt de referencia:**
+
+> /nueva-accion copiar-instaladores "copia los instaladores .exe y .deb de
+> Descargas a Documentos/Instaladores"
+
+**Propuesta:** una entrada JSON de tipo `copiar`, con filtro por `.exe` y
+`.deb`, origen `~/Descargas` y destino `~/Documentos/Instaladores`.
+
+**Qué corregí:** mantuve `copiar` en vez de `mover` para conservar los
+instaladores en Descargas; no hizo falta tocar `acciones.py` porque el tipo
+`copiar` ya existía. El comando reutiliza la validación y el motor.
+
+**Pruebas manuales (en `~/pruebas-tareas/semana2/copiar-instaladores`):**
+
+- `uv run tareas validar`: 4 acciones válidas.
+- `uv run tareas ejecutar copiar-instaladores ... --simular`: muestra los dos
+  instaladores y no crea la carpeta destino ni copia nada.
+- `nota.txt` queda fuera del filtro.
+
+**Qué aprendí:** si el tipo ya existe, añadir una acción es solo configuración,
+no código. El comando mantiene la decisión en el JSON y la validación sigue
+siendo obligatoria antes de ejecutar.

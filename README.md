@@ -283,6 +283,7 @@ acción destructiva vea todos los ficheros.
 | `limpiar-temporales` | borrar | Borra `.tmp` de `~/Descargas` con más de 30 días; confirma antes. |
 | `mover-imagenes` | mover | Mueve imágenes de `~/Descargas` a `~/Imágenes/Fotos`. |
 | `renombrar-capturas` | renombrar | Renombra capturas de `~/Imágenes/Capturas` como `2026-10-27_001.png`. |
+| `copiar-instaladores` | copiar | Copia los instaladores `.exe` y `.deb` de `~/Descargas` a `~/Documentos/Instaladores`. |
 
 Las rutas de `acciones.json` son las de mi equipo Linux en español. En Windows
 o macOS pueden llamarse `Downloads` o `Pictures`: se cambian en el JSON o se
@@ -361,10 +362,11 @@ Modelo del centro: comprobado con `opencode run`; responde correctamente con la 
 
 Comprobado en `~/pruebas-tareas/semana2`, sin tocar ficheros reales:
 
-- `tareas validar`: detecta 3 acciones válidas y devuelve código 3 con JSON roto, tipo inexistente, nombre repetido, regex inválida o falta de `destino`.
+- `tareas validar`: detecta 4 acciones válidas y devuelve código 3 con JSON roto, tipo inexistente, nombre repetido, regex inválida o falta de `destino`.
 - `validar` rechaza campos desconocidos (por ejemplo `filtros`), JSON que no está en UTF-8, números `NaN`/`Infinity` y plantillas que generarían nombres inválidos en Windows.
-- `tareas acciones`: muestra nombre, tipo y descripción de las 3 acciones.
+- `tareas acciones`: muestra nombre, tipo y descripción de las 4 acciones.
 - `tareas ejecutar ... --simular`: enseña origen, destino y estado sin crear carpetas ni mover, renombrar o borrar nada.
+- `copiar-instaladores` se añadió con el flujo de `/nueva-accion`; la simulación detecta `.exe` y `.deb` y no escribe en el destino.
 - Ejecución real en la carpeta de pruebas: mover, renombrar y borrar funcionan con tildes, eñes, espacios y extensiones en mayúsculas.
 - Destino ocupado: se usa `FOTO1 (1).JPG`; tampoco se sustituye un symlink roto.
 - Acción o carpeta inexistente: mensaje humano y código 1, sin traceback.

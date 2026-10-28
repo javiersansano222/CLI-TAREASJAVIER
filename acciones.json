@@ -31,6 +31,16 @@
         "patron": "(?i)^(captura de pantalla|screenshot|screen shot|img_|pxl_).*\\.(png|jpe?g)$"
       },
       "plantilla": "{fecha:%Y-%m-%d}_{n:03}{ext}"
+    },
+    {
+      "nombre": "copiar-instaladores",
+      "descripcion": "Copia los instaladores .exe y .deb de Descargas a una carpeta de respaldo.",
+      "tipo": "copiar",
+      "origen": "~/Descargas",
+      "filtro": {
+        "extensiones": [".exe", ".deb"]
+      },
+      "destino": "~/Documentos/Instaladores"
     }
   ]
 }

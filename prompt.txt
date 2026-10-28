@@ -1,0 +1,64 @@
+Actúa como agente de desarrollo del proyecto «tareas» (1.º DAM) en este repositorio.
+Antes de tocar nada, lee AGENTS.md, README.md, docs/prompts.md,
+docs/adr/0001-configuracion-externa.md, acciones.json, opencode.json y el código
+de src/tareas.
+
+CONTEXTO
+- Stack: Python 3.12 + Typer + Rich + Pillow, gestionado con uv y src layout.
+- Semanas 1 y 2 implementadas. Hay más de 10 commits y el trabajo está en GitHub.
+- La CLI incluye: version, hola, cambio, listar, capturas, temporales, informe,
+  imagenes (comprimir y WebP), validar, acciones y ejecutar.
+- acciones.json tiene 4 acciones: limpiar-temporales, mover-imagenes,
+  renombrar-capturas y copiar-instaladores.
+- `uv run tareas validar` debe responder «4 acciones válidas».
+- Hay pruebas manuales documentadas, pero no una carpeta tests ni pytest.
+- El usuario hace los push; el agente no debe hacer push.
+
+PUNTO PENDIENTE CONOCIDO
+- En el historial, las tres primeras acciones entraron juntas en el commit
+  7d62871. No hay evidencia de que la 2.ª y la 3.ª se crearan usando el comando
+  /nueva-accion.
+- Para dejar constancia del flujo se añadió copiar-instaladores como cuarta
+  acción en el commit b7ecea6, siguiendo las reglas de /nueva-accion.
+- Revisa si eso basta para la rúbrica o si conviene rehacer las acciones 2 y 3
+  con commits separados. No borres ni rehagas acciones sin aprobación expresa.
+
+OBJETIVO DE ESTA SESIÓN
+1. Revisar si la Semana 2 cumple completa: 3 acciones propias funcionando,
+   validar/acciones/ejecutar, excepciones propias, ADR, skill, comando
+   /nueva-accion, subagente revisor, README y docs/prompts.md.
+2. Comprobar el punto pendiente anterior y proponer la opción menos arriesgada.
+3. Revisar que el README y docs/prompts.md cuenten la verdad y estén al día.
+4. Detectar fallos reales antes de la defensa: simulación, destinos ocupados,
+   nombres con tildes/espacios, rutas inexistentes, códigos de salida y
+   compatibilidad Linux/Windows/macOS.
+5. Si hay que cambiar algo, explica primero el plan en 2-3 líneas y espera mi
+   visto bueno. No hagas cambios masivos sin aprobación.
+
+NORMAS
+- Mensajes y comentarios en español; código claro antes que listo.
+- Usa pathlib, encoding="utf-8", shutil y nada de os.system/subprocess/shell=True.
+- No toques .env ni escribas claves o secretos.
+- Prueba solo en ~/pruebas-tareas y siempre primero con --simular.
+- No ejecutes acciones reales sobre ~/Baixades ni sobre carpetas personales.
+- Nunca sobrescribas ficheros: usa el sufijo « (1)».
+- No hagas git push ni reescribas el historial.
+- Antes de un commit, pídemelo; el commit lo hago yo cuando lo indique.
+- Si una prueba falla, explica el mensaje exacto y el caso reproducido.
+
+COMPROBACIONES MÍNIMAS
+- `uv run tareas validar`
+- `uv run tareas acciones`
+- `uv run tareas --help`
+- Una simulación de cada tipo de acción en ~/pruebas-tareas.
+- `git status --short` antes de modificar y antes de terminar.
+- Si hay tests: `uv run pytest`. Si no existen, no inventes una suite nueva sin
+  pedírmelo.
+
+ENTREGABLE AL TERMINAR
+Dame un informe breve con:
+1. Qué comprobaste y con qué comandos.
+2. Qué fallos o lagunas encontraste.
+3. Qué cambiaste, si cambiaste algo.
+4. Qué queda pendiente y qué debo hacer yo antes de la entrega.
+No hagas push.

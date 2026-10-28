@@ -93,7 +93,7 @@ def seleccionar(carpeta: Path, horas: int) -> list[Path]:
 
 
 def enviar_a_papelera(ficheros: list[Path], simular: bool) -> list[Resultado]:
-    """Envía cada captura a la papelera o solo informa si se simula."""
+    """Envía cada fichero a la papelera o solo informa si se simula."""
     resultados: list[Resultado] = []
     for fichero in ficheros:
         try:

@@ -470,3 +470,43 @@ quería poder convertir las imágenes a WebP.
 **Qué aprendí:** convertir no es lo mismo que comprimir: una conversión puede
 aumentar el tamaño y aun así ser el resultado deseado. Por eso `--webp` guarda
 siempre la copia, mientras que `--comprimir` descarta las que no mejoran.
+
+## 2026-10-27 · Orden `temporales`: limpiar ficheros antiguos
+
+**Prompt de referencia:**
+
+> Haz el de `tareas temporales`.
+
+**Interpretación:** limpiar ficheros temporales antiguos y enviarlos a la
+papelera, con simulación, antigüedad configurable y confirmación.
+
+**Qué implementé:**
+
+- `src/tareas/temporales.py` con la detección de temporales y la selección por
+  antigüedad.
+- Extensiones `.tmp`, `.temp`, `.bak`, `.old`, `.part`, `.partial`,
+  `.crdownload`, `.download`, `.swp` y `.swo`.
+- Nombres `.DS_Store` y `Thumbs.db`, bloqueos `~$…` y respaldos que acaban en
+  `~`.
+- La orden `tareas temporales` con `--carpeta`, `--dias` (30 por defecto),
+  `--simular` y `--si`.
+- Reutilización de `enviar_a_papelera()` de `capturas.py` para usar la papelera
+  del sistema.
+- La orden aparece automáticamente en el menú interactivo.
+- Documentación en el README y actualización de `AGENTS.md`.
+
+**Pruebas manuales (en `~/pruebas-tareas/semana4/temporales-1`):**
+
+- Simulación de siete temporales antiguos sin tocar el disco.
+- `.tmp`, `.TMP`, `.bak`, `.DS_Store`, `Thumbs.db`, `~$…` y `*~` detectados.
+- Ficheros recientes, `.log`, `.txt`, subcarpetas y enlaces simbólicos
+  ignorados.
+- Ejecución real: los siete temporales van a la papelera; el resto permanece.
+- Segunda ejecución: «No hay ficheros temporales…», sin errores.
+- `--dias 0`: código 2; carpeta inexistente: código 1 sin traceback.
+- `temporales --simular` funciona dentro del menú interactivo.
+
+**Qué aprendí:** para limpiar temporales hay que combinar nombre y antigüedad;
+no basta con la extensión, porque un `.tmp` recién creado puede estar en uso.
+También conviene reutilizar la papelera y la tabla de resultados en lugar de
+duplicar lógica destructiva.

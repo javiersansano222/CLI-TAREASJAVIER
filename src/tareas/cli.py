@@ -14,6 +14,7 @@ from tareas import capturas as modulo_capturas
 from tareas import config as configuracion
 from tareas import imagenes as modulo_imagenes
 from tareas import informe as modulo_informe
+from tareas import temporales as modulo_temporales
 from tareas.acciones import Resultado
 from tareas.bienvenida import mostrar_bienvenida
 from tareas.errores import TareasError
@@ -330,6 +331,59 @@ def capturas(
 
     resultados = modulo_capturas.enviar_a_papelera(ficheros, simular)
     if not _pintar_resultados(resultados, "capturas", simular, ruta_completa=False):
+        raise typer.Exit(code=1)
+
+
+@app.command()
+def temporales(
+    carpeta: Annotated[
+        Path | None,
+        typer.Option("--carpeta", help="Carpeta de temporales (por defecto, descargas)."),
+    ] = None,
+    dias: Annotated[
+        int,
+        typer.Option("--dias", help="Antigüedad mínima, en días."),
+    ] = 30,
+    simular: Annotated[
+        bool,
+        typer.Option("--simular", help="Enseña qué ficheros se moverían sin tocar nada."),
+    ] = False,
+    si: Annotated[
+        bool,
+        typer.Option("--si", help="No pedir confirmación."),
+    ] = False,
+) -> None:
+    """Envía a la papelera los ficheros temporales antiguos."""
+    if dias < 1:
+        raise typer.BadParameter("debe ser 1 o más", param_hint="--dias")
+
+    ruta = (carpeta or modulo_capturas.carpeta_descargas()).expanduser()
+    try:
+        ficheros = modulo_temporales.seleccionar(ruta, dias)
+    except TareasError as error:
+        _mostrar_error(error)
+
+    if not ficheros:
+        consola.print(
+            f"No hay ficheros temporales con al menos {dias} días en "
+            f"«{escape(str(ruta))}»."
+        )
+        return
+
+    if not simular and not si:
+        texto = "fichero temporal" if len(ficheros) == 1 else "ficheros temporales"
+        typer.confirm(
+            f"¿Enviar {len(ficheros)} {texto} a la papelera?",
+            abort=True,
+        )
+
+    resultados = modulo_temporales.enviar_a_papelera(ficheros, simular)
+    if not _pintar_resultados(
+        resultados,
+        "temporales",
+        simular,
+        ruta_completa=False,
+    ):
         raise typer.Exit(code=1)
 
 

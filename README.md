@@ -7,12 +7,12 @@ Mi herramienta de línea de órdenes para automatizar tareas repetitivas con fic
 1. **Problema:** cada semana pierdo tiempo ordenando Descargas, limpiando temporales antiguos y poniendo nombre a las capturas a mano.
 2. **Para quién:** para mí y para mis compañeros de clase.
 3. **Cómo se usa:** `tareas ORDEN [CARPETA] [opciones]` desde cualquier terminal.
-4. **Órdenes:** `--help`, `version`, `hola`, `cambio`, `listar`, `capturas`, `informe`, `imagenes`, `acciones`, `validar` y `ejecutar`.
+4. **Órdenes:** `--help`, `version`, `hola`, `cambio`, `listar`, `capturas`, `temporales`, `informe`, `imagenes`, `acciones`, `validar` y `ejecutar`.
 5. **Mis 3 acciones:** limpiar temporales de más de 30 días, mover imágenes a `~/Imágenes/Fotos` y renombrar capturas por fecha.
 6. **Nunca hará:** borrar sin pedir confirmación (salvo `--si`) ni tocar ficheros fuera del origen y destino configurados.
 7. **Plataformas:** Linux primero; también Windows y macOS.
 8. **Códigos de salida:** 0 bien · 1 fallo al ejecutar · 2 uso incorrecto · 3 configuración inválida.
-9. **Seguridad:** toda acción, `capturas` e `imagenes` se pueden simular con `--simular`; nunca se sobrescribe un fichero ni un enlace existente y las imágenes siempre se guardan como copias.
+9. **Seguridad:** toda acción, `capturas`, `temporales` e `imagenes` se pueden simular con `--simular`; nunca se sobrescribe un fichero ni un enlace existente y las imágenes siempre se guardan como copias.
 10. **Instalación:** `uv tool install --editable .` (se completa en la semana 4).
 
 ## Puesta en marcha
@@ -50,6 +50,9 @@ tareas capturas --simular
 tareas capturas
 tareas capturas --carpeta ~/pruebas-tareas/capturas --horas 5
 
+tareas temporales --simular
+tareas temporales --carpeta ~/pruebas-tareas/temporales --dias 30
+
 tareas informe
 tareas informe --carpeta ~/pruebas-tareas/capturas --top 3
 
@@ -86,6 +89,7 @@ tareas> version
 tareas> hola
 tareas> cambio
 tareas> capturas --simular
+tareas> temporales --simular
 tareas> informe --top 3
 tareas> imagenes --comprimir --simular
 tareas> salir
@@ -150,6 +154,26 @@ tareas capturas --carpeta ~/pruebas-tareas/capturas
 
 No borra definitivamente: usa la papelera del sistema mediante `send2trash`.
 La orden nunca toca subcarpetas ni enlaces simbólicos.
+
+## Ficheros temporales
+
+`tareas temporales` busca ficheros temporales antiguos en el primer nivel de una
+carpeta (por defecto, la de descargas) y los envía a la papelera. Considera
+temporales las extensiones `.tmp`, `.temp`, `.bak`, `.old`, `.part`, `.partial`,
+`.crdownload`, `.download`, `.swp` y `.swo`, los nombres `.DS_Store` y
+`Thumbs.db`, los bloqueos de Office `~$…` y los respaldos que acaban en `~`.
+
+```bash
+tareas temporales --simular
+tareas temporales --carpeta ~/pruebas-tareas/temporales
+tareas temporales --carpeta ~/pruebas-tareas/temporales --dias 7
+tareas temporales --carpeta ~/pruebas-tareas/temporales --si
+```
+
+Por defecto solo toca ficheros con **30 días o más**; `--dias` cambia esa
+antigüedad. Ignora subcarpetas, enlaces simbólicos y ficheros recientes. Sin
+`--si`, pide confirmación, y `--simular` enseña la lista sin enviar nada a la
+papelera.
 
 ## Informe de descargas
 
@@ -295,6 +319,7 @@ cli-tareas/
         ├── imagenes.py        Comprime imágenes sin tocar los originales
         ├── informe.py         Cuenta ficheros, tipos y capturas pendientes
         ├── menu.py            Menú interactivo de todas las órdenes
+        ├── temporales.py      Detecta temporales antiguos y los manda a la papelera
         ├── errores.py         Excepciones propias
         ├── acciones.py        Clases Mover, Copiar, Renombrar y Borrar
         └── motor.py           Selecciona ficheros y ejecuta la acción

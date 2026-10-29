@@ -15,7 +15,25 @@ Mi herramienta de línea de órdenes para automatizar tareas repetitivas con fic
 9. **Seguridad:** toda acción, `capturas`, `temporales` e `imagenes` se pueden simular con `--simular`; nunca se sobrescribe un fichero ni un enlace existente y las imágenes siempre se guardan como copias.
 10. **Instalación:** `uv tool install --editable .` (se completa en la semana 4).
 
-## Puesta en marcha
+## Instalación en otro equipo
+
+Requisitos: Git y `uv` instalados. `uv` puede instalar Python 3.12.
+
+### Solo para usar la terminal
+
+Si no vas a modificar el código, instala directamente desde GitHub:
+
+```bash
+uv python install 3.12
+uv tool install git+https://github.com/javiersansano222/CLI-TAREASJAVIER --force
+uv tool update-shell   # si «tareas» no aparece en el PATH
+# cierra y abre una terminal nueva
+tareas --help
+tareas sistema
+hola
+```
+
+### Para desarrollar y probar cambios
 
 ```bash
 git clone https://github.com/javiersansano222/CLI-TAREASJAVIER.git
@@ -23,18 +41,35 @@ cd CLI-TAREASJAVIER
 uv python install 3.12
 uv sync
 uv run tareas --help
-uv tool install --editable .
+uv tool install --editable . --force
 uv tool update-shell   # si «tareas» no aparece en el PATH
-# abre una terminal nueva y comprueba:
+# cierra y abre una terminal nueva
 tareas --help
 ```
 
-Para instalarla directamente desde GitHub:
+`uv run tareas` solo funciona dentro del repositorio. Para usarla desde
+cualquier carpeta, usa `tareas` después de instalarla como herramienta.
+
+### Actualizar
+
+Instalación desde GitHub:
 
 ```bash
-uv tool install git+https://github.com/javiersansano222/CLI-TAREASJAVIER
-uv tool update-shell   # si «tareas» no aparece en el PATH
+uv tool install git+https://github.com/javiersansano222/CLI-TAREASJAVIER --force
 ```
+
+Instalación editable:
+
+```bash
+cd CLI-TAREASJAVIER
+git pull
+uv sync
+uv tool install --editable . --force
+```
+
+Si cambia una dependencia y aparece `ModuleNotFoundError`, reinstala con
+`--force`; `uv sync` actualiza el proyecto, pero no el entorno global de la
+herramienta. Después de `uv tool update-shell`, cierra y abre la terminal.
 
 ## Uso rápido
 

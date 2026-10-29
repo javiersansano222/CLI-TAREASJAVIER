@@ -17,7 +17,29 @@ Mi herramienta de línea de órdenes para automatizar tareas repetitivas con fic
 
 ## Instalación en otro equipo
 
+Antes de instalar en otro equipo, sube los últimos cambios con `git push`.
+
 Requisitos: Git y `uv` instalados. `uv` puede instalar Python 3.12.
+
+### Windows (PowerShell)
+
+Abre PowerShell y instala Git y `uv` con `winget`:
+
+```powershell
+winget install --id Git.Git -e
+winget install --id astral-sh.uv -e
+```
+
+Cierra y vuelve a abrir PowerShell. Comprueba que funcionan:
+
+```powershell
+git --version
+uv --version
+```
+
+Los comandos de instalación de las secciones siguientes funcionan igual en
+PowerShell. Si `winget` no está disponible, instala Git y `uv` desde sus
+instaladores oficiales.
 
 ### Solo para usar la terminal
 
@@ -70,6 +92,24 @@ uv tool install --editable . --force
 Si cambia una dependencia y aparece `ModuleNotFoundError`, reinstala con
 `--force`; `uv sync` actualiza el proyecto, pero no el entorno global de la
 herramienta. Después de `uv tool update-shell`, cierra y abre la terminal.
+
+### Si `tareas` no se reconoce en Windows
+
+```powershell
+uv tool update-shell
+```
+
+Cierra y abre PowerShell. Si sigue sin aparecer, añade esta carpeta al PATH:
+
+```text
+%USERPROFILE%\.local\bin
+```
+
+### Rutas de acciones en Windows
+
+`acciones.json` usa rutas de Linux en español (`~/Descargas`, `~/Imágenes`,
+`~/Documentos`). En Windows suelen ser `Downloads`, `Pictures` y `Documents`.
+Cambia el JSON o crea otro fichero y pásalo con `--config`.
 
 ## Uso rápido
 

@@ -17,6 +17,7 @@ from tareas import informe as modulo_informe
 from tareas import temporales as modulo_temporales
 from tareas.acciones import Resultado
 from tareas.bienvenida import mostrar_bienvenida
+from tareas.chuleta import mostrar_chuleta
 from tareas.errores import TareasError
 from tareas.menu import cambiar_color, color_actual, menu_activo, menu_interactivo
 from tareas.motor import Motor
@@ -215,6 +216,12 @@ def version() -> None:
 def hola() -> None:
     """Muestra la bienvenida personalizada de la terminal."""
     mostrar_bienvenida()
+
+
+@app.command()
+def chuleta() -> None:
+    """Muestra una chuleta rápida de Git y comandos de Linux."""
+    mostrar_chuleta(consola)
 
 
 @app.command()

@@ -127,6 +127,8 @@ def _bucle_menu(app: typer.Typer) -> None:
             consola.print(f"[red]✘ No entiendo la línea: {error}[/red]")
             continue
 
+        if partes and partes[0].startswith("/"):
+            partes[0] = partes[0].lstrip("/")
         if partes and partes[0].lower() == "tareas":
             partes = partes[1:]
         if partes:

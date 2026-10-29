@@ -7,8 +7,8 @@ Mi herramienta de línea de órdenes para automatizar tareas repetitivas con fic
 1. **Problema:** cada semana pierdo tiempo ordenando Descargas, limpiando temporales antiguos y poniendo nombre a las capturas a mano.
 2. **Para quién:** para mí y para mis compañeros de clase.
 3. **Cómo se usa:** `tareas ORDEN [CARPETA] [opciones]` desde cualquier terminal.
-4. **Órdenes:** `--help`, `version`, `hola`, `cambio`, `listar`, `capturas`, `temporales`, `informe`, `imagenes`, `acciones`, `validar` y `ejecutar`.
-5. **Mis 3 acciones:** limpiar temporales de más de 30 días, mover imágenes a `~/Imágenes/Fotos` y renombrar capturas por fecha.
+4. **Órdenes:** `--help`, `version`, `hola`, `cambio`, `listar`, `capturas`, `temporales`, `informe`, `imagenes`, `chuleta`, `acciones`, `validar` y `ejecutar`.
+5. **Mis acciones:** limpiar temporales de más de 30 días, mover imágenes a `~/Imágenes/Fotos`, renombrar capturas por fecha y copiar instaladores `.exe`/`.deb` a una carpeta de respaldo.
 6. **Nunca hará:** borrar sin pedir confirmación (salvo `--si`) ni tocar ficheros fuera del origen y destino configurados.
 7. **Plataformas:** Linux primero; también Windows y macOS.
 8. **Códigos de salida:** 0 bien · 1 fallo al ejecutar · 2 uso incorrecto · 3 configuración inválida.
@@ -42,6 +42,7 @@ uv tool update-shell   # si «tareas» no aparece en el PATH
 tareas                  # abre el menú interactivo
 tareas --help           # ayuda general
 tareas cambio           # abre el menú en rojo
+tareas chuleta          # referencia rápida de Git y Linux
 
 hola
 tareas hola
@@ -66,6 +67,7 @@ tareas acciones
 tareas ejecutar limpiar-temporales --simular
 tareas ejecutar mover-imagenes --simular
 tareas ejecutar renombrar-capturas --simular
+tareas ejecutar copiar-instaladores --simular
 
 # Solo cuando la simulación sea la esperada:
 tareas ejecutar limpiar-temporales
@@ -78,6 +80,12 @@ tareas --config ~/pruebas-tareas/acciones.json acciones
 Todas las órdenes funcionan desde cualquier carpeta. `--config` es una opción
 global y va **antes** de la orden. Por defecto se lee `./acciones.json`, en la
 carpeta desde la que se lanza la orden.
+
+## Chuleta de Git y Linux
+
+`tareas chuleta` muestra una referencia rápida de Git, navegación, archivos,
+permisos, procesos, red y compresión. Dentro del menú interactivo también
+funciona `/chuleta` (y `chuleta`).
 
 ## Menú interactivo
 
@@ -315,6 +323,7 @@ cli-tareas/
         ├── __main__.py        python -m tareas
         ├── bienvenida.py      Banner ASCII de bienvenida
         ├── capturas.py        Detecta capturas y las manda a la papelera
+        ├── chuleta.py         Chuleta de Git y comandos de Linux
         ├── cli.py             Órdenes, opciones y salida
         ├── config.py          Carga y valida acciones.json
         ├── imagenes.py        Comprime imágenes sin tocar los originales
@@ -351,7 +360,7 @@ Modelo del centro: comprobado con `opencode run`; responde correctamente con la 
 ## Estado del menú interactivo
 
 - `tareas` sin argumentos abre el menú; `tareas --help` sigue mostrando la ayuda.
-- Desde el menú funcionan `version`, `hola`, `cambio`, `listar`, `capturas`, `informe`, `validar`, `acciones` y `ejecutar`.
+- Desde el menú funcionan `version`, `hola`, `cambio`, `listar`, `capturas`, `informe`, `chuleta`, `validar`, `acciones` y `ejecutar`.
 - `cambio` pone el menú en rojo y vuelve a pintarlo; `cambio normal` lo restaura.
 - `salir`, `exit`, `quit` y `q` cierran el menú; `ayuda` y `?` muestran la ayuda.
 - También acepta el prefijo `tareas`, por ejemplo `tareas version`.

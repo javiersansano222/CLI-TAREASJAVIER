@@ -7,7 +7,7 @@ Mi herramienta de línea de órdenes para automatizar tareas repetitivas con fic
 1. **Problema:** cada semana pierdo tiempo ordenando Descargas, limpiando temporales antiguos y poniendo nombre a las capturas a mano.
 2. **Para quién:** para mí y para mis compañeros de clase.
 3. **Cómo se usa:** `tareas ORDEN [CARPETA] [opciones]` desde cualquier terminal.
-4. **Órdenes:** `--help`, `version`, `hola`, `cambio`, `listar`, `capturas`, `temporales`, `informe`, `imagenes`, `chuleta`, `acciones`, `validar` y `ejecutar`.
+4. **Órdenes:** `--help`, `version`, `hola`, `cambio`, `listar`, `capturas`, `temporales`, `informe`, `imagenes`, `chuleta`, `sistema`, `acciones`, `validar` y `ejecutar`.
 5. **Mis acciones:** limpiar temporales de más de 30 días, mover imágenes a `~/Imágenes/Fotos`, renombrar capturas por fecha y copiar instaladores `.exe`/`.deb` a una carpeta de respaldo.
 6. **Nunca hará:** borrar sin pedir confirmación (salvo `--si`) ni tocar ficheros fuera del origen y destino configurados.
 7. **Plataformas:** Linux primero; también Windows y macOS.
@@ -43,6 +43,7 @@ tareas                  # abre el menú interactivo
 tareas --help           # ayuda general
 tareas cambio           # abre el menú en rojo
 tareas chuleta          # referencia rápida de Git y Linux
+tareas sistema          # disco y memoria en uso
 
 hola
 tareas hola
@@ -86,6 +87,12 @@ carpeta desde la que se lanza la orden.
 `tareas chuleta` muestra una referencia rápida de Git, navegación, archivos,
 permisos, procesos, red y compresión. Dentro del menú interactivo también
 funciona `/chuleta` (y `chuleta`).
+
+## Estado del sistema
+
+`tareas sistema` muestra el tamaño total, usado y libre del disco de la carpeta
+personal, además del uso de la memoria RAM. Dentro del menú interactivo también
+funciona `/sistema` (y `sistema`).
 
 ## Menú interactivo
 
@@ -325,6 +332,7 @@ cli-tareas/
         ├── capturas.py        Detecta capturas y las manda a la papelera
         ├── chuleta.py         Chuleta de Git y comandos de Linux
         ├── cli.py             Órdenes, opciones y salida
+        ├── sistema.py         Disco y memoria en uso
         ├── config.py          Carga y valida acciones.json
         ├── imagenes.py        Comprime imágenes sin tocar los originales
         ├── informe.py         Cuenta ficheros, tipos y capturas pendientes
@@ -360,7 +368,7 @@ Modelo del centro: comprobado con `opencode run`; responde correctamente con la 
 ## Estado del menú interactivo
 
 - `tareas` sin argumentos abre el menú; `tareas --help` sigue mostrando la ayuda.
-- Desde el menú funcionan `version`, `hola`, `cambio`, `listar`, `capturas`, `informe`, `chuleta`, `validar`, `acciones` y `ejecutar`.
+- Desde el menú funcionan `version`, `hola`, `cambio`, `listar`, `capturas`, `informe`, `chuleta`, `sistema`, `validar`, `acciones` y `ejecutar`.
 - `cambio` pone el menú en rojo y vuelve a pintarlo; `cambio normal` lo restaura.
 - `salir`, `exit`, `quit` y `q` cierran el menú; `ayuda` y `?` muestran la ayuda.
 - También acepta el prefijo `tareas`, por ejemplo `tareas version`.

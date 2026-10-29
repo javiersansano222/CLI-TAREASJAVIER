@@ -19,6 +19,7 @@ from tareas.acciones import Resultado
 from tareas.bienvenida import mostrar_bienvenida
 from tareas.chuleta import mostrar_chuleta
 from tareas.errores import TareasError
+from tareas.sistema import mostrar_sistema
 from tareas.menu import cambiar_color, color_actual, menu_activo, menu_interactivo
 from tareas.motor import Motor
 
@@ -222,6 +223,12 @@ def hola() -> None:
 def chuleta() -> None:
     """Muestra una chuleta rápida de Git y comandos de Linux."""
     mostrar_chuleta(consola)
+
+
+@app.command()
+def sistema() -> None:
+    """Muestra el tamaño del disco y la memoria en uso."""
+    mostrar_sistema(consola)
 
 
 @app.command()

@@ -1,8 +1,8 @@
-# tareas
+# tareas 🎯
 
 Mi herramienta de línea de órdenes para automatizar tareas repetitivas con ficheros.
 
-## Spec (versión 0 · 27/10/2026)
+## Spec (versión 0 · 27/10/2026) 📋
 
 1. **Problema:** cada semana pierdo tiempo ordenando Descargas, limpiando temporales antiguos y poniendo nombre a las capturas a mano.
 2. **Para quién:** para mí y para mis compañeros de clase.
@@ -373,10 +373,11 @@ acción destructiva vea todos los ficheros.
 
 | Nombre | Tipo | Qué hace |
 | --- | --- | --- |
-| `limpiar-temporales` | borrar | Borra `.tmp` de `~/Descargas` con más de 30 días; confirma antes. |
-| `mover-imagenes` | mover | Mueve imágenes de `~/Descargas` a `~/Imágenes/Fotos`. |
-| `renombrar-capturas` | renombrar | Renombra capturas de `~/Imágenes/Capturas` como `2026-10-27_001.png`. |
-| `copiar-instaladores` | copiar | Copia los instaladores `.exe` y `.deb` de `~/Descargas` a `~/Documentos/Instaladores`. |
+| 🧹 `limpiar-temporales` | borrar | Borra `.tmp` de `~/Descargas` con más de 30 días; confirma antes. |
+| 🖼️ `mover-imagenes` | mover | Mueve imágenes de `~/Descargas` a `~/Imágenes/Fotos`. |
+| 🖋️ `renombrar-capturas` | renombrar | Renombra capturas de `~/Imágenes/Capturas` como `2026-10-27_001.png`. |
+| 📦 `copiar-instaladores` | copiar | Copia los instaladores `.exe` y `.deb` de `~/Descargas` a `~/Documentos/Instaladores`. |
+| 👁️ `mirar-espacio` | mirar_espacio | Muestra espacio y ficheros de una carpeta. |
 | `mirar-espacio` | mirar_espacio | Muestra el espacio total y número de ficheros de una carpeta. |
 
 Las rutas de `acciones.json` son las de mi equipo Linux en español. En Windows

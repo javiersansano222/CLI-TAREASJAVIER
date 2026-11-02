@@ -145,6 +145,9 @@ tareas ejecutar mover-imagenes --simular
 tareas ejecutar renombrar-capturas --simular
 tareas ejecutar copiar-instaladores --simular
 
+tareas mirar-espacio --simular
+tareas mirar-espacio /ruta/a/carpeta
+
 # Solo cuando la simulación sea la esperada:
 tareas ejecutar limpiar-temporales
 tareas ejecutar limpiar-temporales --si
@@ -374,6 +377,7 @@ acción destructiva vea todos los ficheros.
 | `mover-imagenes` | mover | Mueve imágenes de `~/Descargas` a `~/Imágenes/Fotos`. |
 | `renombrar-capturas` | renombrar | Renombra capturas de `~/Imágenes/Capturas` como `2026-10-27_001.png`. |
 | `copiar-instaladores` | copiar | Copia los instaladores `.exe` y `.deb` de `~/Descargas` a `~/Documentos/Instaladores`. |
+| `mirar-espacio` | mirar_espacio | Muestra el espacio total y número de ficheros de una carpeta. |
 
 Las rutas de `acciones.json` son las de mi equipo Linux en español. En Windows
 o macOS pueden llamarse `Downloads` o `Pictures`: se cambian en el JSON o se
@@ -458,6 +462,7 @@ Comprobado en `~/pruebas-tareas/semana2`, sin tocar ficheros reales:
 - `validar` rechaza campos desconocidos (por ejemplo `filtros`), JSON que no está en UTF-8, números `NaN`/`Infinity` y plantillas que generarían nombres inválidos en Windows.
 - `tareas acciones`: muestra nombre, tipo y descripción de las 4 acciones.
 - `tareas ejecutar ... --simular`: enseña origen, destino y estado sin crear carpetas ni mover, renombrar o borrar nada.
+- `mirar-espacio` se añadió como nueva acción; simulación muestra espacio y ficheros sin tocar nada.
 - `copiar-instaladores` se añadió con el flujo de `/nueva-accion`; la simulación detecta `.exe` y `.deb` y no escribe en el destino.
 - Ejecución real en la carpeta de pruebas: mover, renombrar y borrar funcionan con tildes, eñes, espacios y extensiones en mayúsculas.
 - Destino ocupado: se usa `FOTO1 (1).JPG`; tampoco se sustituye un symlink roto.

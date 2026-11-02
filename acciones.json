@@ -41,6 +41,13 @@
         "extensiones": [".exe", ".deb"]
       },
       "destino": "~/Documentos/Instaladores"
+    },
+    {
+      "nombre": "mirar-espacio",
+      "descripcion": "Muestra el espacio total y número de ficheros de una carpeta.",
+      "tipo": "mirar_espacio",
+      "origen": "~/",
+      "filtro": {}
     }
   ]
 }

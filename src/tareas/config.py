@@ -12,7 +12,7 @@ from typing import Any
 
 from .errores import AccionNoValida, ConfigError
 
-TIPOS = {"mover", "copiar", "renombrar", "borrar"}
+TIPOS = {"mover", "copiar", "renombrar", "borrar", "mirar_espacio"}
 CAMPOS_RAIZ = {"version", "acciones"}
 CAMPOS_ACCION = {
     "nombre",

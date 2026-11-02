@@ -590,6 +590,44 @@ def imagenes(
 
 
 @app.command()
+def mirar_espacio(
+    carpeta: Annotated[
+        Path | None,
+        typer.Argument(help="Carpeta a revisar (por defecto, el origen de la acción)."),
+    ] = None,
+    simular: Annotated[
+        bool,
+        typer.Option("--simular", help="Enseña qué ficheros ocuparían sin tocar nada."),
+    ] = False,
+    ctx: typer.Context = typer.Argument(),
+) -> None:
+    """Muestra el espacio total y número de ficheros de una carpeta."""
+    try:
+        motor = Motor(_cargar_acciones(ctx))
+        resultados = motor.ejecutar("mirar-espacio", carpeta, simular)
+    except TareasError as error:
+        _mostrar_error(error)
+
+    if not resultados:
+        consola.print("No hay ficheros en la carpeta.")
+        return
+    tabla = Table(title=f"Espacio en {escape(str(resultados[0].origen))}")
+    tabla.add_column("Fichero")
+    tabla.add_column("Estado")
+    tabla.add_column("Detalle")
+    for resultado in resultados:
+        detalle = resultado.detalle or "—"
+        tabla.add_row(
+            escape(resultado.origen.name),
+            resultado.estado,
+            detalle,
+        )
+    consola.print(tabla)
+    if simular:
+        consola.print("Para hacerlo de verdad, repite la orden sin --simular.")
+
+
+@app.command()
 def validar(ctx: typer.Context) -> None:
     """Comprueba que acciones.json existe y cumple el esquema."""
     try:

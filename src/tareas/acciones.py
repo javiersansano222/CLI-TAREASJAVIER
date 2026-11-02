@@ -158,3 +158,14 @@ class Borrar(Accion):
             fichero.unlink()
         self._desaparecidos.add(fichero)
         return Resultado(fichero, None, "simulado" if simular else "hecho")
+
+
+class MirarEspacio(Accion):
+    tipo = "mirar_espacio"
+
+    def aplicar(self, fichero: Path, n: int, simular: bool) -> Resultado:
+        try:
+            total = sum(f.stat().st_size for f in fichero.parent.iterdir() if f.is_file())
+            return Resultado(fichero, None, "hecho", f"Total: {total / 1024 / 1024:.2f} MB ({len(list(fichero.parent.iterdir()))} ficheros)")
+        except OSError as exc:
+            return Resultado(fichero, None, "error", str(exc))

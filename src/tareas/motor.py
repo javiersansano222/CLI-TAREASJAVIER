@@ -29,6 +29,12 @@ class Motor:
             )
         return accion
 
+    def ruta_de(self, nombre: str, carpeta: Path | None) -> Path:
+        """Devuelve la carpeta resuelta de una acción: la indicada o su origen."""
+        accion = self.obtener(nombre)
+        ruta = carpeta if carpeta is not None else accion.config.get("origen", ".")
+        return Path(ruta).expanduser()
+
     @staticmethod
     def seleccionar(carpeta: Path, filtro: dict[str, Any]) -> list[Path]:
         """Devuelve solo los ficheros que cumplen todos los filtros."""
@@ -78,8 +84,7 @@ class Motor:
     ) -> list[Resultado]:
         """Ejecuta una acción concreta sobre la carpeta indicada o su origen."""
         accion = self.obtener(nombre)
-        ruta = carpeta if carpeta is not None else accion.config.get("origen", ".")
-        ruta = Path(ruta).expanduser()
+        ruta = self.ruta_de(nombre, carpeta)
 
         if not ruta.is_dir():
             raise TareasError(f"La carpeta «{ruta}» no existe o no es una carpeta.")

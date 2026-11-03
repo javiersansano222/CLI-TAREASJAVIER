@@ -259,7 +259,7 @@ def listar(
     carpeta = carpeta.expanduser()
     if not carpeta.is_dir():
         consola_err.print(
-            f"[red]Error:[/red] «{escape(str(carpeta))}» no existe o no es una carpeta."
+            f"[red]✘ «{escape(str(carpeta))}» no existe o no es una carpeta."
         )
         raise typer.Exit(code=1)
 
@@ -269,7 +269,7 @@ def listar(
         )
     except OSError as exc:
         consola_err.print(
-            f"[red]Error:[/red] no se puede leer «{escape(str(carpeta))}»: "
+            f"[red]✘ no se puede leer «{escape(str(carpeta))}»: "
             f"{escape(str(exc))}"
         )
         raise typer.Exit(code=1) from None
@@ -324,7 +324,7 @@ def capturas(
     ruta = (carpeta or modulo_capturas.carpeta_descargas()).expanduser()
     if not ruta.is_dir():
         consola_err.print(
-            f"[red]Error:[/red] «{escape(str(ruta))}» no existe o no es una carpeta."
+            f"[red]✘ «{escape(str(ruta))}» no existe o no es una carpeta."
         )
         raise typer.Exit(code=1)
 
@@ -589,7 +589,7 @@ def imagenes(
         raise typer.Exit(code=1)
 
 
-@app.command()
+@app.command("mirar-espacio")
 def mirar_espacio(
     carpeta: Annotated[
         Path | None,
@@ -604,14 +604,12 @@ def mirar_espacio(
     """Muestra el espacio total y número de ficheros de una carpeta."""
     try:
         motor = Motor(_cargar_acciones(ctx))
+        ruta = motor.ruta_de("mirar-espacio", carpeta)
         resultados = motor.ejecutar("mirar-espacio", carpeta, simular)
     except TareasError as error:
         _mostrar_error(error)
 
-    if not resultados:
-        consola.print("No hay ficheros en la carpeta.")
-        return
-    tabla = Table(title=f"Espacio en {escape(str(resultados[0].origen))}")
+    tabla = Table(title=f"Espacio en {escape(str(ruta))}")
     tabla.add_column("Fichero")
     tabla.add_column("Estado")
     tabla.add_column("Detalle")

@@ -101,6 +101,7 @@ def _pintar_menu(app: typer.Typer) -> None:
         ("hola", "Muestra el banner de bienvenida ASCII"),
         ("chuleta", "Muestra una chuleta rápida de Git y comandos de Linux"),
         ("sistema", "Muestra el tamaño del disco y la memoria en uso"),
+        ("mirar-espacio", "Muestra el espacio y el número de ficheros de una carpeta"),
         ("capturas", "Envía a la papelera las capturas antiguas"),
         ("temporales", "Envía a la papelera los temporales antiguos"),
         ("informe", "Muestra un resumen de la carpeta de descargas"),

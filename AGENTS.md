@@ -10,6 +10,7 @@
 - Mensajes y comentarios en español; código claro antes que listo.
 - pathlib siempre, encoding="utf-8", nada de os.system ni shell=True: tiene que funcionar en Linux, Windows y macOS.
 - Prueba solo en ~/pruebas-tareas y primero con --simular. No ejecutes acciones destructivas sobre carpetas reales. Sobre ~/Baixades usa siempre `tareas capturas --simular`.
+- Las pruebas de la CLI se hacen en modo aislado: dependencias con `pip --target` en `Temp\opencode\tareas-test-deps` y ejecución con `PYTHONPATH` (o con `uv run` desde el proyecto); nada de instalar paquetes en el Python del sistema ni tocar el registro o el PATH.
 - Todas las órdenes de `tareas` y el ejecutable `hola` funcionan desde cualquier carpeta.
 - No toques .env ni escribas claves en ningún fichero. No hagas git push ni commits: los hace el alumno.
 - Antes de cambiar un fichero, explica en 2-3 líneas qué vas a hacer.

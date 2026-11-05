@@ -12,6 +12,7 @@ from rich.table import Table
 from tareas import __version__
 from tareas import capturas as modulo_capturas
 from tareas import config as configuracion
+from tareas import doctor as modulo_doctor
 from tareas import imagenes as modulo_imagenes
 from tareas import informe as modulo_informe
 from tareas import temporales as modulo_temporales
@@ -700,3 +701,50 @@ def ejecutar(
 
     if not _pintar_resultados(resultados, nombre, simular):
         raise typer.Exit(code=1)
+
+
+@app.command()
+def doctor(ctx: typer.Context) -> None:
+    """Diagnostica el entorno: configuración, dependencias y rutas. No toca nada."""
+    try:
+        comprobaciones = modulo_doctor.diagnosticar(ctx.obj)
+    except TareasError as error:
+        _mostrar_error(error)
+
+    tabla = Table(title="tareas doctor")
+    tabla.add_column("Comprobación")
+    tabla.add_column("Estado")
+    tabla.add_column("Detalle")
+
+    for comprobacion in comprobaciones:
+        simbolo = modulo_doctor.SIMBOLO[comprobacion.estado]
+        color = modulo_doctor.COLOR[comprobacion.estado]
+        tabla.add_row(
+            escape(comprobacion.nombre),
+            f"[{color}]{simbolo} {comprobacion.estado}[/]",
+            escape(comprobacion.detalle),
+        )
+
+    consola.print(tabla)
+
+    errores = [
+        c for c in comprobaciones if c.estado == "error"
+    ]
+    avisos = [c for c in comprobaciones if c.estado == "aviso"]
+
+    if errores:
+        plural = "" if len(errores) == 1 else "s"
+        consola_err.print(
+            f"[red]✘ {len(errores)} comprobación{plural} bloqueante{plural}.[/red]"
+        )
+        raise typer.Exit(code=3)
+
+    if avisos:
+        plural = "" if len(avisos) == 1 else "s"
+        consola.print(
+            f"[yellow]⚠ {len(avisos)} aviso{plural}:"
+            " la herramienta funciona, pero algo puede no estar listo.[/yellow]"
+        )
+        return
+
+    consola.print("[green]✔ Todo listo.[/green]")

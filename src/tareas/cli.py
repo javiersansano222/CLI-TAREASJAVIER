@@ -20,7 +20,7 @@ from tareas.bienvenida import mostrar_bienvenida
 from tareas.chuleta import mostrar_chuleta
 from tareas.errores import TareasError
 from tareas.sistema import mostrar_sistema
-from tareas.menu import cambiar_color, color_actual, menu_activo, menu_interactivo
+from tareas.menu import cambiar_color, color_actual, menu_activo, menu_interactivo, _mostrar_cita_motivacional
 from tareas.motor import Motor
 
 app = typer.Typer(
@@ -229,6 +229,12 @@ def chuleta() -> None:
 def sistema() -> None:
     """Muestra el tamaño del disco y la memoria en uso."""
     mostrar_sistema(consola)
+
+
+@app.command()
+def cita() -> None:
+    """Muestra una cita motivacional aleatoria."""
+    _mostrar_cita_motivacional()
 
 
 @app.command()

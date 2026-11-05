@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import random
 import shlex
 import sys
 from typing import Any
@@ -81,13 +82,44 @@ def _pintar_menu(app: typer.Typer) -> None:
             "Escribe una orden y sus opciones, por ejemplo:\n"
             f"  [{color}]capturas --simular[/{color}]\n"
             f"  [{color}]informe --top 3[/{color}]\n"
-            f"  [{color}]salir[/{color}] para terminar",
+            f"  [{color}]salir[/{color}] para terminar\n"
+            f"  [{color}]hola[/{color}] para ver el banner de bienvenida",
             border_style=color,
         )
     )
 
+    # Mostrar una guía rápida con los comandos más importantes
+    guia_rapida = Table(
+        title="Guía rápida de comandos",
+        title_style=f"bold {color}",
+        header_style=f"bold {color}",
+    )
+    guia_rapida.add_column("Comando", style="bold")
+    guia_rapida.add_column("Descripción")
+    
+    comandos_guia = [
+        ("hola", "Muestra el banner de bienvenida ASCII"),
+        ("chuleta", "Muestra una chuleta rápida de Git y comandos de Linux"),
+        ("sistema", "Muestra el tamaño del disco y la memoria en uso"),
+        ("capturas", "Envía a la papelera las capturas antiguas"),
+        ("temporales", "Envía a la papelera los temporales antiguos"),
+        ("informe", "Muestra un resumen de la carpeta de descargas"),
+        ("imagenes", "Lista o comprime imágenes"),
+        ("validar", "Valida que acciones.json cumple el esquema"),
+        ("acciones", "Lista las acciones definidas en acciones.json"),
+        ("ejecutar <nombre> --simular", "Ejecuta una acción (simulada)"),
+        ("cambio", "Cambia el color del menú (rojo, normal, azul, verde, amarillo)"),
+        ("cita", "Muestra una cita motivacional aleatoria"),
+    ]
+    
+    for comando, desc in comandos_guia:
+        guia_rapida.add_row(comando, desc)
+    
+    consola.print(guia_rapida)
+
+    # Tabla de todas las órdenes disponibles
     tabla = Table(
-        title="Órdenes disponibles",
+        title="Órdenes disponibles (todas)",
         title_style=f"bold {color}",
         header_style=f"bold {color}",
     )
@@ -100,8 +132,36 @@ def _pintar_menu(app: typer.Typer) -> None:
     consola.print(tabla)
 
 
+def _mostrar_cita_motivacional() -> None:
+    """Muestra una cita motivacional aleatoria al usuario."""
+    citas = [
+        "El único modo de hacer un gran trabajo es amar lo que haces. - Steve Jobs",
+        "La vida es lo que pasa mientras estás ocupado haciendo otros planes. - John Lennon",
+        "No cuentes con el mañana, haz hoy lo que puedas. - Johann Wolfgang von Goethe",
+        "La mejor manera de predecir el futuro es creándolo. - Peter Drucker",
+        "No esperes. El tiempo nunca será justo ni perfecto. - Anonymous",
+        "Tu tiempo es limitado, no lo desperdicies viviendo la vida de otros. - Steve Jobs",
+        "El futuro pertenece a aquellos que creen en la belleza de sus sueños. - Eleanor Roosevelt",
+        "El éxito no es la clave de la felicidad. La felicidad es la clave del éxito. - Albert Schweitzer",
+        "El que no siembra vientos, no recoge tempestades. - Proverbio",
+        "La persistencia es el camino del éxito. - Anonymous",
+    ]
+    
+    cita = random.choice(citas)
+    color = color_actual()
+    consola.print(
+        Panel.fit(
+            f"[bold {color}]¡Una palabra de motivación!\n[/bold {color}]{cita}",
+            border_style=color,
+            padding=(1, 2),
+        )
+    )
+
+
 def _bucle_menu(app: typer.Typer) -> None:
     _pintar_menu(app)
+    # Mostrar una cita motivacional al inicio del menú
+    _mostrar_cita_motivacional()
     color_anterior = color_actual()
 
     while True:

@@ -452,6 +452,26 @@ cli-tareas/
 
 Modelo del centro: comprobado con `opencode run`; responde correctamente con la clave configurada en `CENTRO_IA_KEY`.
 
+## Claves y configuración privada
+
+Las claves de los modelos del centro van **siempre** en variables de entorno,
+nunca en un fichero del repositorio. El repo incluye `.env.example` como
+plantilla:
+
+```bash
+cp .env.example .env   # y edita .env con tu clave real
+```
+
+En Windows (PowerShell), como `copy` no crea bien ficheros vacíos desde una
+plantilla, usa: `Copy-Item .env.example .env` o `notepad .env`.
+
+- `.env` está en `.gitignore` desde el primer commit y no debe subirse jamás.
+- `.env.example` sí se sube: es solo la plantilla, sin valores.
+- Las variables usadas son `CENTRO_IA_KEY` (la clave) y, si hace falta,
+  `CENTRO_IA_URL` (el servidor del centro).
+- Sin clave, la herramienta sigue funcionando: solo las órdenes que necesiten
+  IA la pedirán, y explicarán qué falta.
+
 ## Estado de la bienvenida
 
 - `tareas hola` y el ejecutable directo `hola` muestran el banner ASCII.

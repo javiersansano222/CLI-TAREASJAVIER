@@ -172,6 +172,21 @@ funciona `/chuleta` (y `chuleta`).
 personal, además del uso de la memoria RAM. Dentro del menú interactivo también
 funciona `/sistema` (y `sistema`).
 
+## Diagnóstico del entorno
+
+`tareas doctor` hace un chequeo de solo lectura y pinta una tabla con el estado
+de cada comprobación: `acciones.json`, las dependencias opcionales (`send2trash`,
+Pillow, `psutil`), la carpeta de descargas, el origen de cada acción y la carpeta
+de pruebas `~/pruebas-tareas`.
+
+```bash
+tareas doctor
+```
+
+No crea, mueve ni borra nada. Los ⚠ son avisos (código 0): algo funciona a medias,
+como una carpeta que falta o una dependencia opcional. Un ✘ es bloqueante (código 3):
+`acciones.json` no se puede leer o no cumple el esquema. Si todo sale ✔, «Todo listo».
+
 ## Menú interactivo
 
 Al escribir `tareas` sin argumentos se abre un menú con todas las órdenes
@@ -333,7 +348,7 @@ Cada acción tiene estos campos:
 | --- | --- | --- | --- |
 | `nombre` | sí | texto | Identificador único: minúsculas, números y guiones. |
 | `descripcion` | sí | texto | Frase que aparece en `tareas acciones`. |
-| `tipo` | sí | texto | `mover`, `copiar`, `renombrar` o `borrar`. |
+| `tipo` | sí | texto | `mover`, `copiar`, `renombrar`, `borrar` o `mirar_espacio`. |
 | `origen` | no | ruta | Carpeta por defecto si no se pasa `CARPETA`. Admite `~`. |
 | `filtro` | no | objeto | Limita qué ficheros se tocan. Sin filtro se seleccionan todos. |
 | `destino` | mover/copiar | ruta | Carpeta de destino. Se crea si no existe. |
@@ -377,8 +392,7 @@ acción destructiva vea todos los ficheros.
 | 🖼️ `mover-imagenes` | mover | Mueve imágenes de `~/Descargas` a `~/Imágenes/Fotos`. |
 | 🖋️ `renombrar-capturas` | renombrar | Renombra capturas de `~/Imágenes/Capturas` como `2026-10-27_001.png`. |
 | 📦 `copiar-instaladores` | copiar | Copia los instaladores `.exe` y `.deb` de `~/Descargas` a `~/Documentos/Instaladores`. |
-| 👁️ `mirar-espacio` | mirar_espacio | Muestra espacio y ficheros de una carpeta. |
-| `mirar-espacio` | mirar_espacio | Muestra el espacio total y número de ficheros de una carpeta. |
+| 👁️ `mirar-espacio` | mirar_espacio | Muestra el espacio total y número de ficheros de una carpeta. |
 
 Las rutas de `acciones.json` son las de mi equipo Linux en español. En Windows
 o macOS pueden llamarse `Downloads` o `Pictures`: se cambian en el JSON o se
@@ -448,7 +462,7 @@ Modelo del centro: comprobado con `opencode run`; responde correctamente con la 
 ## Estado del menú interactivo
 
 - `tareas` sin argumentos abre el menú; `tareas --help` sigue mostrando la ayuda.
-- Desde el menú funcionan `version`, `hola`, `cambio`, `listar`, `capturas`, `informe`, `chuleta`, `sistema`, `validar`, `acciones` y `ejecutar`.
+- Desde el menú funcionan `version`, `hola`, `cambio`, `listar`, `capturas`, `informe`, `chuleta`, `sistema`, `validar`, `acciones`, `ejecutar` y `doctor`.
 - `cambio` pone el menú en rojo y vuelve a pintarlo; `cambio normal` lo restaura.
 - `salir`, `exit`, `quit` y `q` cierran el menú; `ayuda` y `?` muestran la ayuda.
 - También acepta el prefijo `tareas`, por ejemplo `tareas version`.

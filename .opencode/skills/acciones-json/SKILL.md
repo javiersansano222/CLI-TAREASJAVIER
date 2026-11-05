@@ -7,6 +7,7 @@ description: Reglas del fichero acciones.json de la CLI tareas (campos, tipos, f
 - Raíz: `{"version": 1, "acciones": [...]}`. La versión debe ser el entero 1 y la lista no puede estar vacía.
 - Cada acción: `nombre` (único, minúsculas, números y guiones), `descripcion` y `tipo`.
 - Tipos: `mover` y `copiar` (requieren `destino`), `renombrar` (requiere `plantilla`) y `borrar` (confirma antes de actuar salvo `--si`).
+- `mirar_espacio` es de solo lectura: no requiere `destino` ni `plantilla`, informa del tamaño y número de ficheros y no borra, mueve ni crea nada.
 - `origen` es opcional: si falta, se usa la carpeta indicada en la orden.
 - `filtro` opcional: `extensiones` (lista con punto, por ejemplo `.pdf`), `patron` (regex válida sobre el nombre), `mas_antiguo_que_dias` y `mayor_que_mb`.
 - `plantilla` para renombrar: huecos `{fecha:%Y-%m-%d}`, `{n:03}`, `{ext}` y `{nombre}`. No puede contener barras. Se prueba con un nombre de muestra y se rechazan formatos inválidos, caracteres prohibidos en Windows, nombres reservados y finales en punto o espacio.

@@ -120,6 +120,24 @@ def comprobar_origenes(acciones: list[dict[str, Any]]) -> list[Comprobacion]:
     return comprobaciones
 
 
+def comprobar_ia() -> Comprobacion:
+    """Aviso si faltan las variables de entorno para las órdenes con IA."""
+    import os
+
+    faltan = [
+        variable
+        for variable in ("CENTRO_IA_KEY", "CENTRO_IA_URL")
+        if not os.environ.get(variable, "").strip()
+    ]
+    if not faltan:
+        return Comprobacion("IA del centro", "ok", "variables configuradas")
+    return Comprobacion(
+        "IA del centro",
+        "aviso",
+        f"falta {', '.join(faltan)}: «tareas ia ...» no estará disponible",
+    )
+
+
 def comprobar_pruebas() -> Comprobacion:
     """Comprueba que existe la carpeta de pruebas recomendada."""
     if PRUEBAS.is_dir():
@@ -142,5 +160,6 @@ def diagnosticar(ruta_config: Path) -> list[Comprobacion]:
     comprobaciones.extend(comprobar_dependencias())
     comprobaciones.append(comprobar_descargas())
     comprobaciones.extend(comprobar_origenes(acciones))
+    comprobaciones.append(comprobar_ia())
     comprobaciones.append(comprobar_pruebas())
     return comprobaciones

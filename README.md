@@ -7,7 +7,7 @@ Mi herramienta de línea de órdenes para automatizar tareas repetitivas con fic
 1. **Problema:** cada semana pierdo tiempo ordenando Descargas, limpiando temporales antiguos y poniendo nombre a las capturas a mano.
 2. **Para quién:** para mí y para mis compañeros de clase.
 3. **Cómo se usa:** `tareas ORDEN [CARPETA] [opciones]` desde cualquier terminal.
-4. **Órdenes:** `--help`, `version`, `hola`, `cambio`, `listar`, `capturas`, `temporales`, `informe`, `imagenes`, `chuleta`, `sistema`, `acciones`, `validar` y `ejecutar`.
+4. **Órdenes:** `--help`, `version`, `hola`, `cambio`, `listar`, `capturas`, `temporales`, `informe`, `imagenes`, `chuleta`, `sistema`, `cita`, `acciones`, `validar`, `ejecutar`, `doctor` y `ia sugerir`/`ia explicar`.
 5. **Mis acciones:** limpiar temporales de más de 30 días, mover imágenes a `~/Imágenes/Fotos`, renombrar capturas por fecha y copiar instaladores `.exe`/`.deb` a una carpeta de respaldo.
 6. **Nunca hará:** borrar sin pedir confirmación (salvo `--si`) ni tocar ficheros fuera del origen y destino configurados.
 7. **Plataformas:** Linux primero; también Windows y macOS.
@@ -186,6 +186,31 @@ tareas doctor
 No crea, mueve ni borra nada. Los ⚠ son avisos (código 0): algo funciona a medias,
 como una carpeta que falta o una dependencia opcional. Un ✘ es bloqueante (código 3):
 `acciones.json` no se puede leer o no cumple el esquema. Si todo sale ✔, «Todo listo».
+
+## IA del centro
+
+Dos órdenes usan los modelos del IES a través del servidor del centro
+(`CENTRO_IA_URL` + `CENTRO_IA_KEY`, solo variables de entorno):
+
+```bash
+tareas ia sugerir "quiero mover los PDF de Descargas a Documentos/pdf"
+tareas ia explicar renombrar-capturas ~/pruebas-tareas/capturas
+```
+
+- `ia sugerir` pide una descripción en lenguaje natural y devuelve una acción
+  **validada con el esquema real de `acciones.json`**, lista para pegar en el
+  fichero. No escribe nada: la propuesta se revisa con `tareas validar` y
+  `--simular` antes de nada.
+- `ia explicar` ejecuta la **simulación** de una acción (no toca ningún
+  fichero) y la IA la traduce a lenguaje claro: qué pasaría y a qué
+  prestar atención.
+
+**Sin clave o sin red**, las dos órdenes lo explican en un mensaje humano y
+terminan con código 1; **las demás 18 órdenes no dependen de la IA y siguen
+funcionando igual**. El servidor del centro usa un certificado propio de la
+red del instituto: `tareas` lo valida con la CA si la encuentra en
+`~/.config/opencode/ca-simarro.crt`; en caso contrario el error indica cómo
+añadir la CA (o `IA_TLS_VERIFICAR=0` solo dentro de la red del centro).
 
 ## Menú interactivo
 
@@ -425,15 +450,18 @@ cli-tareas/
         ├── bienvenida.py      Banner ASCII de bienvenida
         ├── capturas.py        Detecta capturas y las manda a la papelera
         ├── chuleta.py         Chuleta de Git y comandos de Linux
-        ├── cli.py             Órdenes, opciones y salida
-        ├── sistema.py         Disco y memoria en uso
-        ├── config.py          Carga y valida acciones.json
-        ├── imagenes.py        Comprime imágenes sin tocar los originales
+         ├── cli.py             Órdenes, opciones y salida
+         ├── sistema.py         Disco y memoria en uso
+         ├── config.py          Carga y valida acciones.json
+         ├── doctor.py          Diagnóstico de solo lectura del entorno
+         ├── ia.py              Capa IA del centro (solo variables de entorno)
+         ├── rutas.py           Detección de la carpeta de descargas (XDG)
+         ├── imagenes.py        Comprime imágenes sin tocar los originales
         ├── informe.py         Cuenta ficheros, tipos y capturas pendientes
         ├── menu.py            Menú interactivo de todas las órdenes
         ├── temporales.py      Detecta temporales antiguos y los manda a la papelera
-        ├── errores.py         Excepciones propias
-        ├── acciones.py        Clases Mover, Copiar, Renombrar y Borrar
+         ├── errores.py         Excepciones propias
+         ├── acciones.py        Clases Mover, Copiar, Renombrar, Borrar y MirarEspacio
         └── motor.py           Selecciona ficheros y ejecuta la acción
 ```
 
@@ -532,5 +560,31 @@ Comprobado en `~/pruebas-tareas/semana3/capturas`:
 - Ruta inexistente o fichero: código 1 sin traceback.
 - `--top 0` o `--horas 0`: error de uso con código 2.
 
-Pendiente para las semanas 3 y 4: capa de IA, pruebas automáticas con `pytest`,
-GitHub Actions, release v1.0 y prueba de instalación en otro sistema.
+## Estado de `tareas doctor`
+
+- Tabla ✔/⚠/✘ de config, dependencias, descargas, orígenes, IA y `~/pruebas-tareas`.
+- Sin tocar disco: solo lectura; ninguna creación, borrado ni escritura.
+- JSON roto con `--config` → ✘ con el motivo exacto (línea y columna) y código 3.
+- Config válida con avisos → resumen amarillo y código 0.
+
+## Estado de la capa IA
+
+Comprobado con el servidor real del centro, en `~/pruebas-tareas/ia-explicar`:
+
+- `tareas ia sugerir "…"` devuelve una acción **validada con el esquema real**
+  y salida 0; si la propuesta no pasa la validación, mensaje humano y código 1.
+- `tareas ia explicar renombrar-capturas ~/pruebas-tareas/ia-explicar`: simula
+  (0 ficheros tocados) y explica el resultado en 2-4 frases, salida 0.
+- Sin `CENTRO_IA_KEY`: mensaje claro de qué falta + código 1; `listar`,
+  `capturas`, `informe`, `doctor`… siguen funcionando (verificado).
+- Servidor caído (503 real): mensaje humano «respóndido 503 … inténtalo más
+  tarde», código 1, sin traceback.
+- Certificado auto-firmado del centro: validado con `ca-simarro.crt`; sin él,
+  el error explica cómo añadir la CA (o `IA_TLS_VERIFICAR=0` solo en la red
+  del instituto). Nunca se imprime la clave en ningún mensaje.
+- `doctor` añade la fila «IA del centro» (⚠ si faltan las variables).
+- `tests/test_ia.py`: 11 tests sin tocar la red (`monkeypatch` + `urlopen`
+  parcheado). Suite completa: 34 tests en verde.
+
+Pendiente para la semana 4: GitHub Actions, release v1.0 y prueba de
+instalación en otro sistema.

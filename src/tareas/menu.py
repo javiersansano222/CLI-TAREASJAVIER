@@ -54,6 +54,31 @@ def _nombre_orden(info: Any) -> str:
     return info.name or info.callback.__name__
 
 
+def _ordenes_menu(app: typer.Typer) -> list[tuple[str, str]]:
+    """Todas las órdenes, bajando un nivel dentro de las subapps (p. ej. «ia»)."""
+    ordenes: list[tuple[str, str]] = []
+    for info in app.registered_commands:
+        if info.hidden:
+            continue
+        ordenes.append((_nombre_orden(info), _descripcion_orden(info)))
+    for info in app.registered_groups:
+        if info.hidden:
+            continue
+        prefijo = info.name or (
+            info.typer_instance.info.name if info.typer_instance.info.name else ""
+        )
+        ayuda = " ".join((info.help or info.typer_instance.info.help or "").split())
+        if ayuda:
+            ordenes.append((prefijo, ayuda))
+        for sub in info.typer_instance.registered_commands:
+            if sub.hidden:
+                continue
+            ordenes.append(
+                (f"{prefijo} {_nombre_orden(sub)}", _descripcion_orden(sub))
+            )
+    return ordenes
+
+
 def _descripcion_orden(info: Any) -> str:
     texto = info.help or info.callback.__doc__ or ""
     return " ".join(texto.split())
@@ -109,6 +134,8 @@ def _pintar_menu(app: typer.Typer) -> None:
         ("validar", "Valida que acciones.json cumple el esquema"),
         ("acciones", "Lista las acciones definidas en acciones.json"),
         ("ejecutar <nombre> --simular", "Ejecuta una acción (simulada)"),
+        ("ia sugerir <descripción>", "La IA propone una acción para acciones.json"),
+        ("ia explicar <acción>", "La IA explica qué haría una acción, en claro"),
         ("cambio", "Cambia el color del menú (rojo, normal, azul, verde, amarillo)"),
         ("cita", "Muestra una cita motivacional aleatoria"),
     ]
@@ -126,10 +153,8 @@ def _pintar_menu(app: typer.Typer) -> None:
     )
     tabla.add_column("Orden", style="bold")
     tabla.add_column("Qué hace")
-    for info in app.registered_commands:
-        if info.hidden:
-            continue
-        tabla.add_row(_nombre_orden(info), _descripcion_orden(info))
+    for nombre, descripcion in _ordenes_menu(app):
+        tabla.add_row(nombre, descripcion)
     consola.print(tabla)
 
 

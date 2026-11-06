@@ -535,3 +535,36 @@ instaladores en Descargas; no hizo falta tocar `acciones.py` porque el tipo
 **Qué aprendí:** si el tipo ya existe, añadir una acción es solo configuración,
 no código. El comando mantiene la decisión en el JSON y la validación sigue
 siendo obligatoria antes de ejecutar.
+
+---
+
+## 2026-11-05 · Capa IA: `tareas ia sugerir` / `tareas ia explicar`
+
+**Prompt (plan):** «Quiero añadir una capa IA con 2 acciones útiles. Primero
+diseña sin escribir código: qué ficheros, qué firmas, cómo reutilizas lo que
+ya existe y qué pasa sin red o sin clave. Yo apruebo el plan y luego se
+construye con `urllib` de la estándar, sin dependencias nuevas ni claves en
+ficheros del repo.»
+
+**Prompt (build):** «Implementa el plan aprobado: `src/tareas/ia.py`
+(excepciones propias, `_leer_env` estricto, POST a `/chat/completions`,
+`hablar`, `sugerir_accion` validando con `config.cargar` en un temporal,
+`explicar_simulacion` con la lista de `Resultado`), subapp `ia` en `cli.py` y
+una fila ⚠ en `doctor`. Luego muéstrame las salidas reales y los tests sin
+red.»
+
+**Resultado:**
+
+- `ia sugerir` (real): propuso `mover-pdfs-descargas-a-documentos` y pasó la
+  validación real del esquema → JSON listo para pegar, código 0.
+- `ia explicar` (real sobre 3 capturas simuladas): explicó renombrado a
+  `2026-11-03_001.png…` y el riesgo de enlaces rotos, código 0, sin tocar nada.
+- Sin clave: «Falta la variable de entorno CENTRO_IA_KEY… el resto de tareas
+  sigue igual» → código 1, sin traceback, y las órdenes sin IA intactas.
+- Caída real del centro (503): mensaje humano y código 1.
+
+**Qué aprendí:** la clave solo viaja en variables de entorno y nunca aparece
+en mensajes ni ficheros; validar la propuesta de la IA con el validador real
+(evita confiar en texto suelto); y un servidor con certificado propio obliga a
+pensar el TLS como caso normal (CA o `IA_TLS_VERIFICAR=0` en la red del
+centro), no como excepción.

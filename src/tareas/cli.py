@@ -13,6 +13,7 @@ from tareas import __version__
 from tareas import capturas as modulo_capturas
 from tareas import config as configuracion
 from tareas import doctor as modulo_doctor
+from tareas import ia as modulo_ia
 from tareas import imagenes as modulo_imagenes
 from tareas import informe as modulo_informe
 from tareas import temporales as modulo_temporales
@@ -29,6 +30,12 @@ app = typer.Typer(
     no_args_is_help=False,
     add_completion=False,
 )
+ia_app = typer.Typer(
+    help="Órdenes que usan la IA del centro (necesitan CENTRO_IA_KEY).",
+    no_args_is_help=True,
+    add_completion=False,
+)
+app.add_typer(ia_app, name="ia")
 consola = Console()
 consola_err = Console(stderr=True)
 
@@ -748,3 +755,48 @@ def doctor(ctx: typer.Context) -> None:
         return
 
     consola.print("[green]✔ Todo listo.[/green]")
+
+
+@ia_app.command()
+def sugerir(
+    descripcion: Annotated[
+        str, typer.Argument(help="Qué quieres hacer, en lenguaje natural.")
+    ],
+) -> None:
+    """Propone una acción para acciones.json a partir de una descripción."""
+    try:
+        accion = modulo_ia.sugerir_accion(descripcion)
+    except TareasError as error:
+        _mostrar_error(error)
+
+    consola.print(
+        "[green]✔ Acción propuesta y validada con el esquema de tareas:[/green]"
+    )
+    consola.print_json(data=accion)
+    consola.print(
+        "Si te vale, añádela a acciones.json (o usa /nueva-accion en OpenCode)"
+        " y comprueba con [bold]tareas validar[/bold] y --simular."
+    )
+
+
+@ia_app.command()
+def explicar(
+    ctx: typer.Context,
+    nombre: Annotated[
+        str, typer.Argument(help="Nombre de la acción (ver: tareas acciones).")
+    ],
+    carpeta: Annotated[
+        Path | None,
+        typer.Argument(help="Carpeta sobre la que simular (por defecto, el origen)."),
+    ] = None,
+) -> None:
+    """Simula una acción y explica en claro qué pasaría."""
+    try:
+        motor = Motor(_cargar_acciones(ctx))
+        resultados = motor.ejecutar(nombre, carpeta, simular=True)
+        explicacion = modulo_ia.explicar_simulacion(nombre, resultados)
+    except TareasError as error:
+        _mostrar_error(error)
+
+    consola.print(explicacion)
+    consola.print("[dim](Simulación: no se ha tocado ningún fichero.)[/dim]")

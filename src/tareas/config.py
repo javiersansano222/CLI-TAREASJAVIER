@@ -19,9 +19,11 @@ TIPOS = {
     "borrar",
     "mirar_espacio",
     "resumir",
+    "renombrar_ia",
+    "clasificar",
 }
 # Tipos que necesitan proveedor IA: sus campos extra se validan en _validar_ia
-TIPOS_IA = {"resumir"}
+TIPOS_IA = {"resumir", "renombrar_ia", "clasificar"}
 CAMPOS_RAIZ = {"version", "acciones"}
 CAMPOS_ACCION = {
     "nombre",
@@ -42,6 +44,7 @@ CAMPOS_POR_TIPO = {
     "mover": ("destino",),
     "copiar": ("destino",),
     "renombrar": ("plantilla",),
+    "clasificar": ("destino",),
 }
 CAMPOS_FILTRO = {
     "extensiones",
@@ -122,6 +125,7 @@ def cargar(ruta: Path) -> list[dict[str, Any]]:
 
 def _validar_ia(accion: dict[str, Any], nombre: str) -> None:
     """Campos propios de las acciones con IA: instrucciones, tope y categorías."""
+    tipo = accion["tipo"]
     instrucciones = accion.get("instrucciones")
     if not isinstance(instrucciones, str) or not instrucciones.strip():
         raise AccionNoValida(
@@ -142,7 +146,15 @@ def _validar_ia(accion: dict[str, Any], nombre: str) -> None:
             f"debe ser un entero entre {MIN_CARACTERES} y {MAX_CARACTERES}",
         )
 
+    # Solo clasificar reparte en categorías; el resto no las usa.
     categorias = accion.get("categorias")
+    if tipo == "clasificar" and categorias is None:
+        raise AccionNoValida(
+            nombre,
+            "categorias",
+            "es obligatorio en acciones de tipo clasificar: lista de "
+            'categorías, por ejemplo ["apuntes", "ejercicios"]',
+        )
     if categorias is not None:
         if not isinstance(categorias, list) or not categorias:
             raise AccionNoValida(
@@ -151,6 +163,7 @@ def _validar_ia(accion: dict[str, Any], nombre: str) -> None:
                 "debe ser una lista no vacía de textos, por ejemplo "
                 '["apuntes", "ejercicios"]',
             )
+        vistas: set[str] = set()
         for categoria in categorias:
             if not isinstance(categoria, str) or not categoria.strip():
                 raise AccionNoValida(
@@ -158,6 +171,11 @@ def _validar_ia(accion: dict[str, Any], nombre: str) -> None:
                     "categorias",
                     "cada categoría debe ser un texto no vacío",
                 )
+            if categoria in vistas:
+                raise AccionNoValida(
+                    nombre, "categorias", f"«{categoria}» está repetida"
+                )
+            vistas.add(categoria)
 
 
 def _nombre(accion: dict[str, Any], numero: int) -> str:

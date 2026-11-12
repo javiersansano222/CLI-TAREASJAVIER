@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
+import re
 import shutil
+import unicodedata
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from .config import CARACTERES_PROHIBIDOS, NOMBRES_RESERVADOS
 from .errores import IANoDisponible
 
 if TYPE_CHECKING:  # .ia importa a este módulo: aquí solo para anotar tipos
@@ -19,6 +22,19 @@ SISTEMA_RESUMIR = (
     "Respondes SOLO en español y en markdown: un título de una línea y "
     "viñetas cortas. Sin preámbulos ni despedidas y sin inventar nada que "
     "no esté en el documento."
+)
+
+SISTEMA_RENOMBRAR = (
+    "Eres un estudiante de 1º DAM que ordena sus apuntes. Respondes SOLO "
+    "con el nombre nuevo del fichero, en minúsculas y con guiones, sin "
+    "extensión, sin comillas y sin ningún texto alrededor. Máximo 60 "
+    "caracteres. Si el nombre ya es bueno, repítelo tal cual."
+)
+
+SISTEMA_CLASIFICAR = (
+    "Eres un estudiante de 1º DAM que clasifica sus apuntes por asignatura. "
+    "Respondes SOLO con una de las categorías que te indiquen, escrita "
+    "exactamente igual, sin comillas y sin ningún texto alrededor."
 )
 
 
@@ -90,6 +106,27 @@ def _texto_pdf(fichero: Path) -> str:
             f"el PDF no se puede leer ({exc.__class__.__name__})"
         ) from None
     return "\n".join(partes)
+
+
+def a_nombre_seguro(texto: str, tope: int = 60) -> str:
+    """Convierte lo que diga la IA en un nombre apto para cualquier sistema.
+
+    Quita comillas, caracteres prohibidos en Windows (/ \\ < > : " | ? *),
+    puntos finales, espacios repetidos y nombres reservados; recorta a «tope»
+    y devuelve vacío si no queda nada utilizable (la acción lo saltará).
+    """
+    nombre = texto.strip().strip("\"'«»").replace("\n", " ")
+    nombre = "".join(
+        " " if caracter in CARACTERES_PROHIBIDOS else caracter
+        for caracter in nombre
+    )
+    nombre = " ".join(nombre.split())[:tope].strip(" .")
+    if not nombre or nombre in {".", ".."}:
+        return ""
+    base = nombre.split(".", maxsplit=1)[0].upper()
+    if base in NOMBRES_RESERVADOS or re.fullmatch(r"(?:COM|LPT)[1-9]", base):
+        return f"n-{nombre}"
+    return nombre
 
 
 class Accion(ABC):
@@ -259,15 +296,18 @@ class AccionIA(Accion):
 
     def preguntar(self, sistema: str, fichero: Path, texto: str) -> RespuestaIA:
         """Pide al modelo que trabaje sobre el texto de un fichero ya leído."""
+        usuario = f"<documento nombre=\"{fichero.name}\">\n{texto}\n</documento>"
+        return self.preguntar_texto(sistema, usuario)
+
+    def preguntar_texto(self, sistema: str, usuario: str) -> RespuestaIA:
+        """Última llamada al modelo: aquí se comprueba que haya proveedor."""
         if self.proveedor is None:
             raise IANoDisponible(
                 "Esta acción necesita IA y no hay proveedor configurado. "
                 "Mira el estado con «tareas comprobar-ia»."
             )
-        usuario = (
-            f"{self.instrucciones}\n\n"
-            f"<documento nombre=\"{fichero.name}\">\n{texto}\n</documento>"
-        )
+        if self.instrucciones:
+            usuario = f"{self.instrucciones}\n\n{usuario}"
         return self.proveedor.completar(sistema, usuario, max_tokens=self.max_tokens)
 
 
@@ -300,3 +340,114 @@ class Resumir(AccionIA):
             encoding="utf-8",
         )
         return Resultado(fichero, destino, "hecho", respuesta.resumen())
+
+
+class RenombrarIA(AccionIA):
+    """Pide a la IA un nombre mejor y renombra el fichero en su misma carpeta.
+
+    La extensión original nunca se toca: solo cambia la base del nombre, y
+    lo que devuelva el modelo pasa siempre por a_nombre_seguro().
+    """
+
+    tipo = "renombrar_ia"
+    max_tokens = 60
+
+    def aplicar(self, fichero: Path, n: int, simular: bool) -> Resultado:
+        try:
+            texto = leer_texto(fichero, self.max_caracteres)
+        except ValueError:
+            texto = ""  # imagen u otro formato: solo se manda el nombre actual
+
+        if simular:
+            return Resultado(
+                fichero,
+                None,
+                "simulado",
+                self.presupuesto(len(texto) + len(fichero.name)),
+            )
+
+        extracto = texto.strip() or "(sin texto legible: usa solo el nombre)"
+        usuario = f"Nombre actual: {fichero.name}\n\n{extracto}"
+        respuesta = self.preguntar_texto(SISTEMA_RENOMBRAR, usuario)
+        base = a_nombre_seguro(respuesta.texto)
+        if not base:
+            return Resultado(
+                fichero, None, "saltado", "la IA no ha propuesto un nombre válido"
+            )
+
+        nuevo = f"{base}{fichero.suffix}"
+        if nuevo == fichero.name:
+            return Resultado(fichero, None, "saltado", "el nombre ya es bueno")
+
+        destino = self._destino_libre(fichero.with_name(nuevo))
+        if not simular:
+            fichero.rename(destino)
+        self._desaparecidos.add(fichero)
+        return Resultado(fichero, destino, "hecho", respuesta.resumen())
+
+
+class Classificar(AccionIA):
+    """Reparte los apuntes en subcarpetas de «destino» según la categoría que
+    elija la IA entre las declaradas en «categorias»."""
+
+    tipo = "clasificar"
+
+    @property
+    def categorias(self) -> list[str]:
+        return [str(c) for c in self.config.get("categorias", [])]
+
+    def aplicar(self, fichero: Path, n: int, simular: bool) -> Resultado:
+        try:
+            texto = leer_texto(fichero, self.max_caracteres)
+        except ValueError as exc:
+            return Resultado(fichero, None, "saltado", str(exc))
+        if not texto.strip():
+            return Resultado(fichero, None, "saltado", "no contiene texto extraíble")
+
+        if simular:
+            return Resultado(fichero, None, "simulado", self.presupuesto(len(texto)))
+
+        usuario = (
+            f"Categorías posibles: {', '.join(self.categorias)}\n\n"
+            f"<documento nombre=\"{fichero.name}\">\n{texto}\n</documento>"
+        )
+        respuesta = self.preguntar_texto(SISTEMA_CLASIFICAR, usuario)
+        categoria = _categoria_mas_cercana(respuesta.texto, self.categorias)
+        if categoria is None:
+            return Resultado(
+                fichero,
+                None,
+                "saltado",
+                f"«{respuesta.texto.strip()[:40]}» no es una categoría conocida",
+            )
+
+        carpeta = Path(self.config["destino"]).expanduser() / categoria
+        destino = self._destino_libre(carpeta / fichero.name)
+        carpeta.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(fichero), str(destino))
+        self._desaparecidos.add(fichero)
+        return Resultado(
+            fichero, destino, "hecho", f"categoría «{categoria}» · {respuesta.resumen()}"
+        )
+
+
+def _categoria_mas_cercana(texto: str, categorias: list[str]) -> str | None:
+    """Casa la respuesta con una categoría ignorando mayúsculas y tildes.
+
+    Si el modelo devuelve algo que no está en la lista, no se inventa una
+    carpeta: se salta el fichero y se avisa en la columna Detalle.
+    """
+    limpia = _sin_tildes(texto).strip().lower()
+    for categoria in categorias:
+        if _sin_tildes(categoria).strip().lower() == limpia:
+            return categoria
+    return None
+
+
+def _sin_tildes(texto: str) -> str:
+    """Quita las tildes: «Programación» y «programacion» son la misma cosa."""
+    return "".join(
+        caracter
+        for caracter in unicodedata.normalize("NFD", texto)
+        if unicodedata.category(caracter) != "Mn"
+    )

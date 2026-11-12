@@ -8,6 +8,7 @@ import pytest
 from tareas.acciones import (
     Accion,
     AccionIA,
+    Classificar,
     MirarEspacio,
     Resultado,
     Mover,
@@ -127,3 +128,59 @@ def test_resumir_sin_proveedor_no_gasta():
     )
     with pytest.raises(IANoDisponible):
         resumir.preguntar("sistema", Path("apunte.md"), "texto")
+
+
+def test_nombre_seguro_quita_lo_prohibido():
+    """Lo que devuelva la IA se limpia para Windows/Linux/macOS."""
+    from tareas.acciones import a_nombre_seguro
+
+    assert a_nombre_seguro('"Tema 5: herencia / intro"') == "Tema 5 herencia intro"
+    assert a_nombre_seguro("  espacios   dobles  ") == "espacios dobles"
+    assert a_nombre_seguro("final.") == "final"
+    assert a_nombre_seguro("") == ""
+    assert a_nombre_seguro("CON") == "n-CON"  # nombre reservado de Windows
+    assert len(a_nombre_seguro("x" * 300)) == 60  # tope
+
+
+def test_categoria_con_tildes_y_mayusculas():
+    """La respuesta de la IA casa con la categoría aunque cambien tildes."""
+    from tareas.acciones import _categoria_mas_cercana
+
+    categorias = ["programacion", "bases-de-datos", "otro"]
+    assert _categoria_mas_cercana("Programación", categorias) == "programacion"
+    assert _categoria_mas_cercana(" BASES-DE-DATOS ", categorias) == "bases-de-datos"
+    assert _categoria_mas_cercana("inventada", categorias) is None
+
+
+def test_clasificar_y_renombrar_necesitan_ia():
+    """Los dos tipos nuevos están registrados y piden proveedor."""
+    from tareas.acciones import Classificar, RenombrarIA
+
+    assert Accion._registro["clasificar"] == Classificar
+    assert Accion._registro["renombrar_ia"] == RenombrarIA
+    assert Classificar.necesita_ia is True
+    assert RenombrarIA.necesita_ia is True
+
+
+def test_clasificar_simulacion_no_mueve(tmp_path):
+    """La simulación cuenta tokens y no crea ni mueve nada."""
+    origen = tmp_path / "origen"
+    destino = tmp_path / "destino"
+    origen.mkdir()
+    (origen / "apunte.txt").write_text("contenido del apunte", encoding="utf-8")
+    accion = Classificar(
+        {
+            "nombre": "clasificar-apuntes",
+            "descripcion": "prueba",
+            "tipo": "clasificar",
+            "origen": str(origen),
+            "destino": str(destino),
+            "categorias": ["programacion"],
+            "instrucciones": "elige",
+            "max_caracteres": 8000,
+        }
+    )
+    resultados = accion.ejecutar([origen / "apunte.txt"], simular=True)
+    assert resultados[0].estado == "simulado"
+    assert "sin gastar" in resultados[0].detalle
+    assert not destino.exists()

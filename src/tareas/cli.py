@@ -671,16 +671,33 @@ def acciones(ctx: typer.Context) -> None:
     tabla = Table(title="Acciones disponibles")
     tabla.add_column("Nombre")
     tabla.add_column("Tipo")
+    tabla.add_column("IA")
     tabla.add_column("Descripción")
 
+    con_ia = 0
     for accion in lista:
+        necesita = accion["tipo"] in configuracion.TIPOS_IA
+        con_ia += necesita
         tabla.add_row(
             escape(accion["nombre"]),
             escape(accion["tipo"]),
+            "[yellow]sí[/yellow]" if necesita else "—",
             escape(accion["descripcion"]),
         )
 
     consola.print(tabla)
+    if con_ia:
+        resto = len(lista) - con_ia
+        palabra = "acción" if con_ia == 1 else "acciones"
+        verbo = "necesita" if con_ia == 1 else "necesitan"
+        consola.print(
+            f"[yellow]{con_ia} {palabra} {verbo} IA[/yellow] "
+            f"(las {resto} restantes funcionan sin red)."
+        )
+        consola.print(
+            "[dim]Sin clave o sin red, las de IA salen con código 4 y no "
+            "tocan nada: sigue usando las demás.[/dim]"
+        )
 
 
 @app.command()

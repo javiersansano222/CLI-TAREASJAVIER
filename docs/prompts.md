@@ -638,10 +638,23 @@ servidor activado): «Usa context7 para mirar la API actual de httpx y dime
 si `httpx.post(..., verify=ssl.SSLContext)` sigue siendo la forma correcta
 de pasar un contexto TLS en la versión documentada.»
 
-- Qué espero resolverme: confirmar el parámetro `verify` de `httpx` y si
-  la forma de pasar un `SSLContext` con la CA del centro sigue vigente en la
-  documentación actual, frente a `verify=<ruta ca.pem>`.
-- Qué cambiaría si me lo confirma: dejar `ProveedorCentro` con el contexto
-  TLS propio (ya lo hace con `urllib`); si httpx documenta una alternativa
-  más limpia, migrar solo ese detalle sin tocar el resto.
-- Tras usarlo, se vuelve a `"disabled": true`.
+**Qué te resolvió (respuesta real del 12/11/2026, en clase):**
+
+> Sí, sigue siendo correcto. En la documentación actual (0.28.x), `verify`
+> acepta `True`, `False` o una instancia de `ssl.SSLContext`, tanto en helpers
+> como `httpx.post`/`httpx.request` como en `httpx.Client`. Matiz: la doc
+> recomienda pasar el contexto al instanciar el `Client`
+> (`httpx.Client(verify=ctx)`) para reutilizar conexiones; pasarlo en cada
+> `httpx.post(...)` también funciona, pero crea un transporte nuevo en cada
+> petición.
+
+- Confirmado: la forma de pasar el contexto TLS con la CA del centro sigue
+  vigente, y `tareas` ya lo hace así: `ProveedorCentro` (httpx) construye un
+  `ssl.SSLContext` con `ca-simarro.crt` y lo pasa como `verify=` en los reintentos
+  (`enviar(verificar)` en `ia.py`).
+- **No cambia nada del código**, salvo el matiz de eficiencia: hoy cada
+  petición suelta rehace transporte. Si un día llamamos a la IA muchas veces
+  en un mismo lote (p. ej. `resumir-apuntes` sobre un temario entero),
+  compensará pasar a `httpx.Client(verify=ctx)` compartido, que es lo que
+  recomienda la doc actual. Queda anotado como mejora futura, no urgente.
+- Tras usarlo, se vuelve a `"disabled": true` en `opencode.json`.

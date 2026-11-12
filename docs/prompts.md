@@ -568,3 +568,80 @@ en mensajes ni ficheros; validar la propuesta de la IA con el validador real
 (evita confiar en texto suelto); y un servidor con certificado propio obliga a
 pensar el TLS como caso normal (CA o `IA_TLS_VERIFICAR=0` en la red del
 centro), no como excepción.
+
+---
+
+## 2026-11-12 · Semana 3: capa IA de acciones (`resumir/renombrar/clasificar-apuntes`)
+
+**Prompt de plan:** «Quiero añadir acciones que usen la IA del centro
+(resumir apuntes, renombrar con nombre claro, clasificar por asignatura).
+Diseña sin escribir código: proveedor inyectable, qué guarda cada una, cómo
+se valida la propuesta, qué pasa sin clave o sin red y cuánto costaría en
+tokens con `--simular`. Yo apruebo el plan y luego se construye.»
+
+**Prompt de build:** «Implementa el plan: excepciones `IANoDisponible` con
+código 4, `.env` vía variables de entorno, `ProveedorCentro.desde_entorno()`,
+clases `Resumir`/`RenombrarIA`/`Classificar` con `AccionIA` (solo lectura del
+texto, `a_nombre_seguro`, `_categoria_mas_cercana`), motor que inyecta el
+proveedor solo fuera de la simulación, `comprobar-ia` y columna IA en
+`acciones`. Muéstrame las salidas reales en una carpeta de temp.»
+
+**Qué corregí del primer planteamiento:**
+
+- El timeout de 45 s es realista: el resumen de un apunte de 3 páginas tardó
+  más de una vez y devolvió código 4 con mensaje humano; probado reintento.
+- `leer_texto` de PDF debe distinguir «PDF ilegible» de «PDF sin texto»:
+  un PDF corrupto no revienta, sale `saltado (PdfReadError)` y el lote sigue.
+- El test del contador de acciones estaba fijo en `5`; al llegar a 8 accion
+  rompió. Se cambió a regex `(\d+) acciones? válidas >= 5` y `cwd` dinámico
+  con `Path(__file__).parents[1]`.
+- `conftest.py` quita `CENTRO_IA_KEY` en todos los tests: la suite no depende
+  de la red ni de claves del equipo.
+- `--simular` nunca gasta tokens: solo cuenta presupuesto (~caracteres/4).
+
+**Pruebas manuales (todo en `/tmp/tareas-prueba`, nunca `~/Baixades`):**
+
+- `comprobar-ia` → «El modelo responde «ok» en 0.5 s», salida 0.
+- `ejecutar resumir-apuntes --simular` → «(~18 tokens, sin gastar)», sin conexión real.
+- Real: `.resumen.md` en `Resúmenes/` terminado en la viñeta «Para el examen:»
+  (verificado con .txt, .md y un PDF de verdad leído con pypdf).
+- Real: `renombrar-apuntes` → `biologia-tema5-sistema-nervioso.txt` y
+  `historia-revolucion-industrial.md`, extensión conservada.
+- Real: `clasificar-apuntes` creó `Clasificados/<asignatura>/`; con las
+  categorías de config de clase, biología/historía cayeron en «otro» (no
+  están en la lista → comportamiento correcto, no inventa carpetas).
+- Sin `CENTRO_IA_KEY` → salida 4; con URL apuntando a puerto cerrado → 4;
+  en ambos casos el resto de acciones intactas y ningún mensaje enseña la
+  clave.
+- PDF sin texto → `saltado (PdfReadError)`; PDF corrupto →
+  `saltado (PdfStreamError)`; doctor sin `pypdf` (simulado con find_spec) →
+  ⚠ y sigue; `tareas acciones` → columna IA con «sí» en las 3 acciones de IA.
+- Suite completa: **45 tests en verde**.
+
+**Qué aprendí:** inyectar el proveedor desde el motor deja las acciones
+testables sin red (mock o None); «saltado» es la respuesta correcta para el
+contenidos ilegibles (la IA no es una excusa para petar); un timeout no es un
+fallo de la herramienta sino del día del servidor, y por eso tiene su código 4
+propio; y los tests que hardcodean rutas absolutas o números exactos de
+configuración se rompen solos — se prueban con regex y rutas relativas.
+
+---
+
+## 2026-11-12 · Uso del MCP context7 (rúbrica)
+
+Servidor configurado en `opencode.json` → bloque `mcp.servers.context7`
+(remote, `https://mcp.context7.com/mcp`), habitualmente `"disabled": true`
+para que no consuma contexto en cada sesión.
+
+**Consulta pensada** (se ejecuta en clase, tras reiniciar OpenCode con el
+servidor activado): «Usa context7 para mirar la API actual de httpx y dime
+si `httpx.post(..., verify=ssl.SSLContext)` sigue siendo la forma correcta
+de pasar un contexto TLS en la versión documentada.»
+
+- Qué espero resolverme: confirmar el parámetro `verify` de `httpx` y si
+  la forma de pasar un `SSLContext` con la CA del centro sigue vigente en la
+  documentación actual, frente a `verify=<ruta ca.pem>`.
+- Qué cambiaría si me lo confirma: dejar `ProveedorCentro` con el contexto
+  TLS propio (ya lo hace con `urllib`); si httpx documenta una alternativa
+  más limpia, migrar solo ese detalle sin tocar el resto.
+- Tras usarlo, se vuelve a `"disabled": true`.

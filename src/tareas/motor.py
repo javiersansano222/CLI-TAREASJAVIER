@@ -5,10 +5,13 @@ from __future__ import annotations
 import re
 import time
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from .acciones import Accion, Resultado
+from .acciones import Accion, AccionIA, Resultado
 from .errores import TareasError
+
+if TYPE_CHECKING:  # solo para anotar el tipo: .ia no debe importar al motor
+    from .ia import ProveedorIA
 
 
 class Motor:
@@ -18,6 +21,9 @@ class Motor:
         self.acciones: dict[str, Accion] = {
             accion["nombre"]: Accion.desde_config(accion) for accion in acciones
         }
+        # La CLI lo rellena solo cuando la acción pedida necesita IA y no es
+        # simulación: sin proveedor, una acción con IA nunca gasta tokens.
+        self.proveedor: ProveedorIA | None = None
 
     def obtener(self, nombre: str) -> Accion:
         """Devuelve una acción por su nombre o un error humano si no existe."""
@@ -90,4 +96,6 @@ class Motor:
             raise TareasError(f"La carpeta «{ruta}» no existe o no es una carpeta.")
 
         ficheros = self.seleccionar(ruta, accion.config.get("filtro", {}))
+        if isinstance(accion, AccionIA):
+            accion.proveedor = self.proveedor
         return accion.ejecutar(ficheros, simular)

@@ -48,6 +48,19 @@
       "tipo": "mirar_espacio",
       "origen": "~/",
       "filtro": {}
+    },
+    {
+      "nombre": "resumir-apuntes",
+      "descripcion": "Resume con la IA los apuntes en PDF, TXT o MD en un .resumen.md.",
+      "tipo": "resumir",
+      "origen": "~/pruebas-tareas/Apuntes",
+      "destino": "~/pruebas-tareas/Resúmenes",
+      "filtro": {
+        "extensiones": [".pdf", ".txt", ".md"]
+      },
+      "instrucciones": "Resume este apunte para repasarlo antes del examen. Termina SIEMPRE con una viñeta que empiece por «Para el examen:» y recoja los 2 o 3 puntos que más se suelen olvidar.",
+      "max_caracteres": 12000,
+      "confirmar": false
     }
   ]
 }

@@ -25,7 +25,7 @@ from dotenv import find_dotenv, load_dotenv
 
 from .acciones import Resultado
 from .config import cargar as cargar_config
-from .errores import TareasError
+from .errores import IANoDisponible, TareasError
 
 MODELO = "Qwen38-DualSpark-low"
 TIMEOUT_S = 45

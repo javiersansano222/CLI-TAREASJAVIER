@@ -7,7 +7,19 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+from .errores import IANoDisponible
+
+if TYPE_CHECKING:  # .ia importa a este módulo: aquí solo para anotar tipos
+    from .ia import ProveedorIA, RespuestaIA
+
+SISTEMA_RESUMIR = (
+    "Eres un estudiante de 1º DAM que resume apuntes para repasar. "
+    "Respondes SOLO en español y en markdown: un título de una línea y "
+    "viñetas cortas. Sin preámbulos ni despedidas y sin inventar nada que "
+    "no esté en el documento."
+)
 
 
 @dataclass(frozen=True)
@@ -39,11 +51,53 @@ def destino_libre(
     return libre
 
 
+def leer_texto(fichero: Path, tope: int) -> str:
+    """Devuelve el texto de un .pdf, .txt o .md cortado a «tope» caracteres.
+
+    Los PDF se leen con pypdf (dependencia que se importa aquí dentro, para
+    que la CLI arranque aunque no esté). Si el PDF no tiene texto extraíble o
+    el formato no es de texto, lanza ValueError: la acción lo convierte en
+    «saltado» y sigue con el siguiente fichero.
+    """
+    extension = fichero.suffix.lower()
+    if extension == ".pdf":
+        texto = _texto_pdf(fichero)
+    elif extension in {".txt", ".md"}:
+        try:
+            texto = fichero.read_text(encoding="utf-8", errors="replace")
+        except OSError as exc:
+            raise ValueError(f"no se puede leer: {exc}") from None
+    else:
+        raise ValueError(
+            f"«{extension or 'sin extensión'}» no es un formato de texto legible"
+        )
+    return texto[:tope]
+
+
+def _texto_pdf(fichero: Path) -> str:
+    """Extrae el texto de todas las páginas de un PDF."""
+    try:
+        from pypdf import PdfReader
+    except ImportError:
+        raise ValueError(
+            "para leer PDF hace falta pypdf: instálalo con «uv add pypdf»"
+        ) from None
+    try:
+        lector = PdfReader(str(fichero))
+        partes = [pagina.extract_text() or "" for pagina in lector.pages]
+    except Exception as exc:  # pypdf lanza tipos variados con PDFs rotos
+        raise ValueError(
+            f"el PDF no se puede leer ({exc.__class__.__name__})"
+        ) from None
+    return "\n".join(partes)
+
+
 class Accion(ABC):
     """Base de todas las acciones; cada subclase se registra sola por su tipo."""
 
     tipo = ""
     destructiva = False
+    necesita_ia = False
     _registro: dict[str, type[Accion]] = {}
 
     def __init__(self, config: dict[str, Any]) -> None:
@@ -169,3 +223,80 @@ class MirarEspacio(Accion):
             return Resultado(fichero, None, "hecho", f"Total: {total / 1024 / 1024:.2f} MB ({len(list(fichero.parent.iterdir()))} ficheros)")
         except OSError as exc:
             return Resultado(fichero, None, "error", str(exc))
+
+
+class AccionIA(Accion):
+    """Base de las acciones que mandan texto al modelo y guardan su respuesta.
+
+    El proveedor lo inyecta el motor antes de ejecutar: sin él (o en
+    simulación) nunca se gasta un solo token.
+    """
+
+    tipo = ""
+    necesita_ia = True
+    max_tokens = 1200
+
+    def __init__(self, config: dict[str, Any]) -> None:
+        super().__init__(config)
+        self.proveedor: ProveedorIA | None = None
+
+    @property
+    def max_caracteres(self) -> int:
+        """Tope de texto que se envía al modelo para no pasarnos de contexto."""
+        return int(self.config.get("max_caracteres", 12_000))
+
+    @property
+    def instrucciones(self) -> str:
+        """Lo que el usuario pide que se haga con el documento."""
+        return str(self.config.get("instrucciones", "")).strip()
+
+    def presupuesto(self, caracteres: int) -> str:
+        """Lo que costaría procesar este fichero; es lo único que enseña --simular."""
+        return (
+            f"enviaría {caracteres} caracteres "
+            f"(~{max(1, caracteres // 4)} tokens, sin gastar)"
+        )
+
+    def preguntar(self, sistema: str, fichero: Path, texto: str) -> RespuestaIA:
+        """Pide al modelo que trabaje sobre el texto de un fichero ya leído."""
+        if self.proveedor is None:
+            raise IANoDisponible(
+                "Esta acción necesita IA y no hay proveedor configurado. "
+                "Mira el estado con «tareas comprobar-ia»."
+            )
+        usuario = (
+            f"{self.instrucciones}\n\n"
+            f"<documento nombre=\"{fichero.name}\">\n{texto}\n</documento>"
+        )
+        return self.proveedor.completar(sistema, usuario, max_tokens=self.max_tokens)
+
+
+class Resumir(AccionIA):
+    """Escribe un .resumen.md junto a cada apunte (o en «destino»)."""
+
+    tipo = "resumir"
+
+    def aplicar(self, fichero: Path, n: int, simular: bool) -> Resultado:
+        try:
+            texto = leer_texto(fichero, self.max_caracteres)
+        except ValueError as exc:
+            return Resultado(fichero, None, "saltado", str(exc))
+        if not texto.strip():
+            return Resultado(fichero, None, "saltado", "no contiene texto extraíble")
+
+        if simular:
+            return Resultado(fichero, None, "simulado", self.presupuesto(len(texto)))
+
+        respuesta = self.preguntar(SISTEMA_RESUMIR, fichero, texto)
+        carpeta = (
+            Path(self.config["destino"]).expanduser()
+            if "destino" in self.config
+            else fichero.parent
+        )
+        destino = self._destino_libre(carpeta / f"{fichero.stem}.resumen.md")
+        carpeta.mkdir(parents=True, exist_ok=True)
+        destino.write_text(
+            f"# Resumen de {fichero.name}\n\n{respuesta.texto}\n",
+            encoding="utf-8",
+        )
+        return Resultado(fichero, destino, "hecho", respuesta.resumen())

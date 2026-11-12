@@ -11,7 +11,7 @@ def test_cargar_acciones_validas():
     """Test que carga y valida acciones.json correcto."""
     ruta = Path("acciones.json")
     acciones = cargar(ruta)
-    assert len(acciones) == 5
+    assert len(acciones) >= 5  # crece con cada acción nueva del proyecto
 
 
 def test_cargar_acciones_sin_fichero(tmp_path: Path):

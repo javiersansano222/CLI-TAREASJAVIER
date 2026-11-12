@@ -94,17 +94,21 @@ def _pintar_resultados(
     tabla.add_column("Fichero")
     tabla.add_column("Destino")
     tabla.add_column("Estado")
+    # La columna Detalle solo aparece si hay algo que contar (presupuesto de
+    # la simulación con IA, coste real, motivo de un «saltado», tamaño…).
+    con_detalle = any(resultado.detalle for resultado in resultados)
+    if con_detalle:
+        tabla.add_column("Detalle")
 
     for resultado in resultados:
         destino = str(resultado.destino) if resultado.destino is not None else "—"
         origen = (
             str(resultado.origen) if ruta_completa else resultado.origen.name
         )
-        tabla.add_row(
-            escape(origen),
-            escape(destino),
-            resultado.estado,
-        )
+        fila = [escape(origen), escape(destino), resultado.estado]
+        if con_detalle:
+            fila.append(escape(resultado.detalle or ""))
+        tabla.add_row(*fila)
 
     consola.print(tabla)
 
@@ -702,6 +706,10 @@ def ejecutar(
     try:
         motor = Motor(_cargar_acciones(ctx))
         accion = motor.obtener(nombre)
+        if accion.necesita_ia and not simular:
+            # Sin clave o sin red, desde_entorno avisa y sale con código 4:
+            # el resto de órdenes de la CLI no se entera.
+            motor.proveedor = modulo_ia.ProveedorCentro.desde_entorno()
         if accion.destructiva and accion.confirmar and not simular and not si:
             typer.confirm(
                 f"«{nombre}» borra ficheros. ¿Seguro?",

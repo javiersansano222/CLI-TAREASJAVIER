@@ -7,6 +7,12 @@ class TareasError(Exception):
     codigo_salida = 1
 
 
+class IANoDisponible(TareasError):
+    """Sin clave, sin red o el servidor de IA no responde: las órdenes sin IA siguen."""
+
+    codigo_salida = 4
+
+
 class ConfigError(TareasError):
     """acciones.json no existe, no es JSON o no cumple el esquema."""
 

@@ -52,6 +52,7 @@ def comprobar_dependencias() -> list[Comprobacion]:
         "send2trash": ("send2trash", "capturas y temporales no podrán usar la papelera"),
         "PIL": ("Pillow", "imagenes no podrá comprimir ni convertir"),
         "psutil": ("psutil", "sistema no podrá leer disco y memoria"),
+        "pypdf": ("pypdf", "resumir-apuntes no podrá leer PDF"),
     }
     comprobaciones: list[Comprobacion] = []
     for modulo, (nombre, motivo) in modulos.items():

@@ -12,7 +12,16 @@ from typing import Any
 
 from .errores import AccionNoValida, ConfigError
 
-TIPOS = {"mover", "copiar", "renombrar", "borrar", "mirar_espacio"}
+TIPOS = {
+    "mover",
+    "copiar",
+    "renombrar",
+    "borrar",
+    "mirar_espacio",
+    "resumir",
+}
+# Tipos que necesitan proveedor IA: sus campos extra se validan en _validar_ia
+TIPOS_IA = {"resumir"}
 CAMPOS_RAIZ = {"version", "acciones"}
 CAMPOS_ACCION = {
     "nombre",
@@ -23,7 +32,11 @@ CAMPOS_ACCION = {
     "destino",
     "plantilla",
     "confirmar",
+    "instrucciones",
+    "max_caracteres",
+    "categorias",
 }
+MIN_CARACTERES, MAX_CARACTERES, DEFECTO_CARACTERES = 500, 50_000, 12_000
 CAMPOS_OBLIGATORIOS = ("nombre", "descripcion", "tipo")
 CAMPOS_POR_TIPO = {
     "mover": ("destino",),
@@ -101,8 +114,50 @@ def cargar(ruta: Path) -> list[dict[str, Any]]:
         nombres.add(nombre)
         _validar_filtro(accion, nombre)
         _validar_tipo(accion, nombre)
+        if accion["tipo"] in TIPOS_IA:
+            _validar_ia(accion, nombre)
 
     return acciones
+
+
+def _validar_ia(accion: dict[str, Any], nombre: str) -> None:
+    """Campos propios de las acciones con IA: instrucciones, tope y categorías."""
+    instrucciones = accion.get("instrucciones")
+    if not isinstance(instrucciones, str) or not instrucciones.strip():
+        raise AccionNoValida(
+            nombre,
+            "instrucciones",
+            "es obligatorio en acciones con IA: qué debe hacer el modelo",
+        )
+
+    max_caracteres = accion.get("max_caracteres", DEFECTO_CARACTERES)
+    if (
+        isinstance(max_caracteres, bool)
+        or not isinstance(max_caracteres, int)
+        or not MIN_CARACTERES <= max_caracteres <= MAX_CARACTERES
+    ):
+        raise AccionNoValida(
+            nombre,
+            "max_caracteres",
+            f"debe ser un entero entre {MIN_CARACTERES} y {MAX_CARACTERES}",
+        )
+
+    categorias = accion.get("categorias")
+    if categorias is not None:
+        if not isinstance(categorias, list) or not categorias:
+            raise AccionNoValida(
+                nombre,
+                "categorias",
+                "debe ser una lista no vacía de textos, por ejemplo "
+                '["apuntes", "ejercicios"]',
+            )
+        for categoria in categorias:
+            if not isinstance(categoria, str) or not categoria.strip():
+                raise AccionNoValida(
+                    nombre,
+                    "categorias",
+                    "cada categoría debe ser un texto no vacío",
+                )
 
 
 def _nombre(accion: dict[str, Any], numero: int) -> str:

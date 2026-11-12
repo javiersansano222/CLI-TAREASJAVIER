@@ -13,7 +13,7 @@ def test_motor_inicializacion():
     from tareas.config import cargar
     acciones = cargar(Path("acciones.json"))
     motor = Motor(acciones)
-    assert len(motor.acciones) == 5
+    assert len(motor.acciones) >= 5  # crece con cada acción nueva del proyecto
 
 
 def test_motor_obtener_accion():

@@ -1,64 +1,122 @@
-Actúa como agente de desarrollo del proyecto «tareas» (1.º DAM) en este repositorio.
-Antes de tocar nada, lee AGENTS.md, README.md, docs/prompts.md,
-docs/adr/0001-configuracion-externa.md, acciones.json, opencode.json y el código
-de src/tareas.
+PROMPT PARA CLASE — Semana 3 (IA), lo que queda
+================================================
 
-CONTEXTO
-- Stack: Python 3.12 + Typer + Rich + Pillow, gestionado con uv y src layout.
-- Semanas 1 y 2 implementadas. Hay más de 10 commits y el trabajo está en GitHub.
-- La CLI incluye: version, hola, cambio, listar, capturas, temporales, informe,
-  imagenes (comprimir y WebP), validar, acciones y ejecutar.
-- acciones.json tiene 4 acciones: limpiar-temporales, mover-imagenes,
-  renombrar-capturas y copiar-instaladores.
-- `uv run tareas validar` debe responder «4 acciones válidas».
-- Hay pruebas manuales documentadas, pero no una carpeta tests ni pytest.
-- El usuario hace los push; el agente no debe hacer push.
+Contexto: el repo ya tiene 7 commits locales sin subir (haz `git push` tú
+primero). La CLI funciona sin red: `--simular` cuenta tokens sin gastar y
+las acciones con IA salen con código 4 si falta clave o red.
 
-PUNTO PENDIENTE CONOCIDO
-- En el historial, las tres primeras acciones entraron juntas en el commit
-  7d62871. No hay evidencia de que la 2.ª y la 3.ª se crearan usando el comando
-  /nueva-accion.
-- Para dejar constancia del flujo se añadió copiar-instaladores como cuarta
-  acción en el commit b7ecea6, siguiendo las reglas de /nueva-accion.
-- Revisa si eso basta para la rúbrica o si conviene rehacer las acciones 2 y 3
-  con commits separados. No borres ni rehagas acciones sin aprobación expresa.
+Antes de empezar, en la red del instituto:
 
-OBJETIVO DE ESTA SESIÓN
-1. Revisar si la Semana 2 cumple completa: 3 acciones propias funcionando,
-   validar/acciones/ejecutar, excepciones propias, ADR, skill, comando
-   /nueva-accion, subagente revisor, README y docs/prompts.md.
-2. Comprobar el punto pendiente anterior y proponer la opción menos arriesgada.
-3. Revisar que el README y docs/prompts.md cuenten la verdad y estén al día.
-4. Detectar fallos reales antes de la defensa: simulación, destinos ocupados,
-   nombres con tildes/espacios, rutas inexistentes, códigos de salida y
-   compatibilidad Linux/Windows/macOS.
-5. Si hay que cambiar algo, explica primero el plan en 2-3 líneas y espera mi
-   visto bueno. No hagas cambios masivos sin aprobación.
+    uv sync
 
-NORMAS
-- Mensajes y comentarios en español; código claro antes que listo.
-- Usa pathlib, encoding="utf-8", shutil y nada de os.system/subprocess/shell=True.
-- No toques .env ni escribas claves o secretos.
-- Prueba solo en ~/pruebas-tareas y siempre primero con --simular.
-- No ejecutes acciones reales sobre ~/Baixades ni sobre carpetas personales.
-- Nunca sobrescribas ficheros: usa el sufijo « (1)».
-- No hagas git push ni reescribas el historial.
-- Antes de un commit, pídemelo; el commit lo hago yo cuando lo indique.
-- Si una prueba falla, explica el mensaje exacto y el caso reproducido.
+(Entra `httpx`, `python-dotenv` y `pypdf` en `uv.lock`; sin esto,
+`uv run tareas` dará ModuleNotFoundError. Yo no puedo hacerlo: no hay `uv`
+en mi equipo de casa.)
 
-COMPROBACIONES MÍNIMAS
-- `uv run tareas validar`
-- `uv run tareas acciones`
-- `uv run tareas --help`
-- Una simulación de cada tipo de acción en ~/pruebas-tareas.
-- `git status --short` antes de modificar y antes de terminar.
-- Si hay tests: `uv run pytest`. Si no existen, no inventes una suite nueva sin
-  pedírmelo.
 
-ENTREGABLE AL TERMINAR
-Dame un informe breve con:
-1. Qué comprobaste y con qué comandos.
-2. Qué fallos o lagunas encontraste.
-3. Qué cambiaste, si cambiaste algo.
-4. Qué queda pendiente y qué debo hacer yo antes de la entrega.
-No hagas push.
+------------------------------------------------
+1. USAR context7 UNA VEZ (pendiente de la rúbrica)
+------------------------------------------------
+
+El bloque `mcp` de `opencode.json` ya está escrito pero con
+`"disabled": true` para los dos servidores (`context7` y `apuntes`).
+
+En clase:
+
+  a) Quita `"disabled": true` solo a `context7` (o ponlo en `false`).
+  b) Reinicia OpenCode para que cargue el servidor.
+  c) Úsalo UNA vez para algo real, por ejemplo:
+
+     > Usa context7 para mirar la API actual de httpx y dime si
+     > `httpx.post(..., verify=ssl.SSLContext)` sigue siendo la forma
+     > correcta de pasar un contexto TLS en la versión documentada.
+
+  d) Apunta en `docs/prompts.md` el prompt usado y qué te resolvió
+     (qué consulta hiciste, qué te aportó y si cambiarías algo del
+     código a partir de ahí).
+  e) Vuelve a dejarlo `"disabled": true` (no consume contexto ni se
+     conecta hasta que lo enciendas).
+
+Si prefieres no tocar `opencode.json`, también vale anotar en
+`prompts.md` que el servidor está configurado y por qué está apagado.
+
+
+------------------------------------------------
+2. COMPLETAR docs/prompts.md (pendiente)
+------------------------------------------------
+
+Falta la entrada de la semana 3, con el mismo formato que las anteriores.
+Debe incluir, como mínimo:
+
+  - Prompt de plan: diseño de la capa IA (ProveedorIA, código 4, .env).
+  - Prompt de build: implementación por pasos 1 a 7.
+  - Qué corregiste del primer planteamiento. Ejemplos reales de esta
+    semana que puedes contar:
+      * El error `NameError: name 'text' is not define` en `preguntar`
+        (escribí `text` en vez de `texto`): salió un traceback que
+        rompía el "nunca hay traceback". Corregido y desde entonces
+        `preguntar_texto` es el único punto de llamada.
+      * El plural «acciónes» en la columna IA: dos intentos hasta
+        acertar.
+      * Los tests `== 5` contaban acciones: al añadir la sexta rompían.
+        Cambiado a `>= 5` para que no se rompan con cada acción nueva.
+      * Rechacé que `--simular` gastara tokens: la simulación solo
+        cuenta el presupuesto.
+  - Pruebas manuales hechas (todas en carpeta temporal, sin tocar
+    `~/pruebas-tareas` ni `~/Baixades`).
+  - Qué aprendiste.
+
+
+------------------------------------------------
+3. PRUEBAS REALES CONTRA EL SERVIDOR DEL CENTRO
+------------------------------------------------
+
+Solo en la red del instituto. Primero siempre `--simular`:
+
+    uv run tareas comprobar-ia
+    uv run tareas ejecutar resumir-apuntes ~/pruebas-tareas/Apuntes --simular
+    uv run tareas ejecutar renombrar-apuntes ~/pruebas-tareas/Apuntes --simular
+    uv run tareas ejecutar clasificar-apuntes ~/pruebas-tareas/Apuntes --simular
+
+Luego, con calma y sobre COPIAS de pruebas:
+
+    uv run tareas ejecutar resumir-apuntes ~/pruebas-tareas/Apuntes
+    uv run tareas ejecutar renombrar-apuntes ~/pruebas-tareas/Apuntes
+    uv run tareas ejecutar clasificar-apuntes ~/pruebas-tareas/Apuntes
+
+Comprueba:
+  - El `.resumen.md` se crea en `~/pruebas-tareas/Resúmenes` y termina
+    con la viñeta «Para el examen:».
+  - El renombrado cambia solo la base del nombre y conserva `.txt`/`.md`.
+  - La clasificación crea `~/pruebas-tareas/Clasificados/<asignatura>/`.
+  - Los tokens y segundos aparecen en la columna Detalle.
+  - Ningún mensaje enseña `CENTRO_IA_KEY`.
+
+Si el certificado del centro da error de validación, copia
+`ca-simarro.crt` a `~/.config/opencode/ca-simarro.crt` o usa
+`IA_TLS_VERIFICAR=0` SOLO dentro de la red del instituto.
+
+
+------------------------------------------------
+4. CASOS QUE FALTA PROBAR (si da tiempo)
+------------------------------------------------
+
+  - Un PDF de verdad (no solo .txt/.md): pypdf ya está instalado.
+    Un PDF escaneado sin texto debe salir «saltado», no error.
+  - `tareas doctor` con `pypdf` ausente: debe dar ⚠ y seguir.
+  - Que `tareas acciones` muestre la columna IA con la config de clase.
+  - Un PDF ilegible o corrupto: mensaje humano, sin traceback.
+  - `uv run pytest`: deben pasar los 37 tests (los 8 que fallan son
+    tests escritos en Linux con `uv` y `/home/...`: o se arreglan aquí
+    o se documentan en la semana 4).
+
+
+------------------------------------------------
+5. NO OLVIDAR
+------------------------------------------------
+
+  - `git push` lo haces tú; yo no hago push ni commits sin que me lo pidas.
+  - Nada de claves en ficheros; `.env` nunca se sube.
+  - Pruebas solo en carpetas de temp o `~/pruebas-tareas`, nunca en
+    `~/Baixades` sin `--simular`.
+  - Si cambias `acciones.json`, ejecuta `uv run tareas validar`.

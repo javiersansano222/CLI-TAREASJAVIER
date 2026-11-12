@@ -483,8 +483,10 @@ Modelo del centro: comprobado con `opencode run`; responde correctamente con la 
 ## Claves y configuración privada
 
 Las claves de los modelos del centro van **siempre** en variables de entorno,
-nunca en un fichero del repositorio. El repo incluye `.env.example` como
-plantilla:
+nunca en un fichero del repositorio. La CLI lee sola el `.env` de la carpeta
+desde la que lanzas la orden (con `python-dotenv`, buscando hacia arriba);
+si la variable ya está exportada en la terminal, manda esa y el `.env` se
+ignora. El repo incluye `.env.example` como plantilla:
 
 ```bash
 cp .env.example .env   # y edita .env con tu clave real

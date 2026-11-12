@@ -124,6 +124,9 @@ def comprobar_ia() -> Comprobacion:
     """Aviso si faltan las variables de entorno para las órdenes con IA."""
     import os
 
+    from .ia import cargar_dotenv
+
+    cargar_dotenv()
     faltan = [
         variable
         for variable in ("CENTRO_IA_KEY", "CENTRO_IA_URL")

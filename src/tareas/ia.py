@@ -18,6 +18,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from dotenv import find_dotenv, load_dotenv
+
 from .acciones import Resultado
 from .config import cargar as cargar_config
 from .errores import TareasError
@@ -54,8 +56,21 @@ class RespuestaIA:
     modelo: str
 
 
+def cargar_dotenv() -> None:
+    """Carga el .env de la carpeta desde la que se lanza la orden, si existe.
+
+    Busca hacia arriba desde la carpeta actual; lo que ya esté exportado en la
+    terminal manda, el fichero no lo pisa. Sin .env no pasa nada: se siguen
+    leyendo las variables de entorno de siempre.
+    """
+    ruta = find_dotenv(usecwd=True)
+    if ruta:
+        load_dotenv(ruta)
+
+
 def _leer_env(clave: str) -> str:
     """Devuelve la variable de entorno o lanza FaltaClaveIA con mensaje claro."""
+    cargar_dotenv()
     valor = os.environ.get(clave, "").strip()
     if not valor:
         raise FaltaClaveIA(

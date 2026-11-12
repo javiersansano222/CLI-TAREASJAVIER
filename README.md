@@ -7,7 +7,7 @@ Mi herramienta de línea de órdenes para automatizar tareas repetitivas con fic
 1. **Problema:** cada semana pierdo tiempo ordenando Descargas, limpiando temporales antiguos y poniendo nombre a las capturas a mano.
 2. **Para quién:** para mí y para mis compañeros de clase.
 3. **Cómo se usa:** `tareas ORDEN [CARPETA] [opciones]` desde cualquier terminal.
-4. **Órdenes:** `--help`, `version`, `hola`, `cambio`, `listar`, `capturas`, `temporales`, `informe`, `imagenes`, `chuleta`, `sistema`, `cita`, `acciones`, `validar`, `ejecutar`, `doctor` y `ia sugerir`/`ia explicar`.
+4. **Órdenes:** `--help`, `version`, `hola`, `cambio`, `listar`, `capturas`, `temporales`, `informe`, `imagenes`, `chuleta`, `sistema`, `cita`, `acciones`, `validar`, `ejecutar`, `doctor`, `comprobar-ia` y `ia sugerir`/`ia explicar`.
 5. **Mis acciones:** limpiar temporales de más de 30 días, mover imágenes a `~/Imágenes/Fotos`, renombrar capturas por fecha y copiar instaladores `.exe`/`.deb` a una carpeta de respaldo.
 6. **Nunca hará:** borrar sin pedir confirmación (salvo `--si`) ni tocar ficheros fuera del origen y destino configurados.
 7. **Plataformas:** Linux primero; también Windows y macOS.
@@ -189,14 +189,23 @@ como una carpeta que falta o una dependencia opcional. Un ✘ es bloqueante (có
 
 ## IA del centro
 
-Dos órdenes usan los modelos del IES a través del servidor del centro
-(`CENTRO_IA_URL` + `CENTRO_IA_KEY`, solo variables de entorno):
+El servidor del centro (`CENTRO_IA_URL` + `CENTRO_IA_KEY`) se usa desde dos
+sitios: las órdenes `ia` y las **acciones con IA** de `acciones.json`.
 
 ```bash
+# Comprobar que el modelo responde (no enseña la clave)
+tareas comprobar-ia
+
+# Órdenes sueltas
 tareas ia sugerir "quiero mover los PDF de Descargas a Documentos/pdf"
 tareas ia explicar renombrar-capturas ~/pruebas-tareas/capturas
+
+# Acciones con IA (primero siempre --simular)
+tareas ejecutar resumir-apuntes ~/pruebas-tareas/Apuntes --simular
 ```
 
+- `comprobar-ia` manda una pregunta mínima y dice si el modelo responde, con
+  su tiempo. Muestra la URL y «clave: definida», nunca la clave.
 - `ia sugerir` pide una descripción en lenguaje natural y devuelve una acción
   **validada con el esquema real de `acciones.json`**, lista para pegar en el
   fichero. No escribe nada: la propuesta se revisa con `tareas validar` y
@@ -205,12 +214,41 @@ tareas ia explicar renombrar-capturas ~/pruebas-tareas/capturas
   fichero) y la IA la traduce a lenguaje claro: qué pasaría y a qué
   prestar atención.
 
-**Sin clave o sin red**, las dos órdenes lo explican en un mensaje humano y
-terminan con código 1; **las demás 18 órdenes no dependen de la IA y siguen
-funcionando igual**. El servidor del centro usa un certificado propio de la
-red del instituto: `tareas` lo valida con la CA si la encuentra en
-`~/.config/opencode/ca-simarro.crt`; en caso contrario el error indica cómo
-añadir la CA (o `IA_TLS_VERIFICAR=0` solo dentro de la red del centro).
+### Acciones con IA
+
+`tareas acciones` enseña una columna **IA** que marca cuáles necesitan el
+modelo. Ahora mismo son tres, todas sobre `~/pruebas-tareas/Apuntes`:
+
+| Acción | Tipo | Qué hace |
+| --- | --- | --- |
+| 📝 `resumir-apuntes` | `resumir` | Escribe `{nombre}.resumen.md` en `~/pruebas-tareas/Resúmenes`. |
+| 🏷️ `renombrar-apuntes` | `renombrar_ia` | Les pone un nombre claro; la extensión no cambia. |
+| 🗂️ `clasificar-apuntes` | `clasificar` | Los mueve a `~/pruebas-tareas/Clasificados/<asignatura>`. |
+
+Cómo funciona por dentro:
+
+- **`--simular` no gasta tokens**: solo cuenta caracteres y enseña el
+  presupuesto en la columna Detalle («enviaría 12000 caracteres (~3000
+  tokens, sin gastar)»). Tampoco pide clave.
+- **Sin clave o sin red**, la acción sale con **código 4** y un mensaje que
+  recuerda que *las acciones sin IA siguen funcionando*; no se toca ningún
+  fichero.
+- Lo que devuelva el modelo pasa siempre por una limpieza (`a_nombre_seguro`
+  o la lista de `categorias`): si no hay nada válido, el fichero queda
+  **saltado** con su motivo, nunca se inventa un nombre ni una carpeta.
+- El texto se recorta a `max_caracteres` (500-50000) antes de enviarse, y un
+  PDF sin texto extraíble se salta.
+
+### Si algo falla
+
+**Sin clave o sin red**, las órdenes `ia` y las acciones con IA lo explican en
+un mensaje humano y terminan con **código 4**; **el resto de órdenes no
+dependen de la IA y siguen funcionando igual** (verificado con `validar`,
+`acciones`, `doctor` y `ejecutar` sin IA, todos a 0). El servidor del centro
+usa un certificado propio de la red del instituto: `tareas` lo valida con la
+CA si la encuentra en `~/.config/opencode/ca-simarro.crt`; en caso contrario
+el error indica cómo añadir la CA (o `IA_TLS_VERIFICAR=0` solo dentro de la
+red del centro).
 
 ## Menú interactivo
 
@@ -373,12 +411,15 @@ Cada acción tiene estos campos:
 | --- | --- | --- | --- |
 | `nombre` | sí | texto | Identificador único: minúsculas, números y guiones. |
 | `descripcion` | sí | texto | Frase que aparece en `tareas acciones`. |
-| `tipo` | sí | texto | `mover`, `copiar`, `renombrar`, `borrar` o `mirar_espacio`. |
+| `tipo` | sí | texto | `mover`, `copiar`, `renombrar`, `borrar`, `mirar_espacio`, `resumir`, `renombrar_ia` o `clasificar`. |
 | `origen` | no | ruta | Carpeta por defecto si no se pasa `CARPETA`. Admite `~`. |
 | `filtro` | no | objeto | Limita qué ficheros se tocan. Sin filtro se seleccionan todos. |
-| `destino` | mover/copiar | ruta | Carpeta de destino. Se crea si no existe. |
+| `destino` | mover/copiar/clasificar/resumir | ruta | Carpeta de destino. Se crea si no existe. |
 | `plantilla` | renombrar | texto | Nombre nuevo con huecos `{fecha}`, `{n}`, `{ext}` y `{nombre}`. |
 | `confirmar` | no | booleano | Pide confirmación antes de borrar. Por defecto, `true`; si se pone `false`, no pregunta. |
+| `instrucciones` | con IA | texto | Qué se le pide al modelo. Obligatorio en `resumir`, `renombrar_ia` y `clasificar`. |
+| `max_caracteres` | con IA | entero 500-50000 | Tope de texto que se envía. Por defecto, `12000`. |
+| `categorias` | clasificar | lista no vacía | Categorías entre las que elige el modelo. Sin repetidos. |
 
 Dentro de `filtro` se pueden combinar estas opciones; si hay varias, el fichero
 debe cumplirlas todas:
@@ -418,6 +459,9 @@ acción destructiva vea todos los ficheros.
 | 🖋️ `renombrar-capturas` | renombrar | Renombra capturas de `~/Imágenes/Capturas` como `2026-10-27_001.png`. |
 | 📦 `copiar-instaladores` | copiar | Copia los instaladores `.exe` y `.deb` de `~/Descargas` a `~/Documentos/Instaladores`. |
 | 👁️ `mirar-espacio` | mirar_espacio | Muestra el espacio total y número de ficheros de una carpeta. |
+| 📝 `resumir-apuntes` | resumir | Resume con IA los apuntes de `~/pruebas-tareas/Apuntes` en `.resumen.md`. |
+| 🏷️ `renombrar-apuntes` | renombrar_ia | Les pone un nombre claro con IA; la extensión no cambia. |
+| 🗂️ `clasificar-apuntes` | clasificar | Mueve cada apunte a la subcarpeta de su asignatura. |
 
 Las rutas de `acciones.json` son las de mi equipo Linux en español. En Windows
 o macOS pueden llamarse `Downloads` o `Pictures`: se cambian en el JSON o se
@@ -442,7 +486,9 @@ cli-tareas/
 │   └── agents/revisor.md
 ├── docs/
 │   ├── prompts.md             Cuaderno de prompts
-│   └── adr/0001-configuracion-externa.md
+│   └── adr/
+│       ├── 0001-configuracion-externa.md
+│       └── 0002-ia-interfaz-y-salida-4.md
 └── src/
     └── tareas/
         ├── __init__.py        Versión del paquete
@@ -454,7 +500,7 @@ cli-tareas/
          ├── sistema.py         Disco y memoria en uso
          ├── config.py          Carga y valida acciones.json
          ├── doctor.py          Diagnóstico de solo lectura del entorno
-         ├── ia.py              Capa IA del centro (solo variables de entorno)
+         ├── ia.py              ProveedorIA y ProveedorCentro (httpx, .env)
          ├── rutas.py           Detección de la carpeta de descargas (XDG)
          ├── imagenes.py        Comprime imágenes sin tocar los originales
         ├── informe.py         Cuenta ficheros, tipos y capturas pendientes
@@ -571,22 +617,33 @@ Comprobado en `~/pruebas-tareas/semana3/capturas`:
 
 ## Estado de la capa IA
 
-Comprobado con el servidor real del centro, en `~/pruebas-tareas/ia-explicar`:
+**Diseño:** `ProveedorIA` (interfaz) + `ProveedorCentro` (httpx) y
+`IANoDisponible` con **código 4** — ver `docs/adr/0002-ia-interfaz-y-salida-4.md`.
 
-- `tareas ia sugerir "…"` devuelve una acción **validada con el esquema real**
-  y salida 0; si la propuesta no pasa la validación, mensaje humano y código 1.
-- `tareas ia explicar renombrar-capturas ~/pruebas-tareas/ia-explicar`: simula
-  (0 ficheros tocados) y explica el resultado en 2-4 frases, salida 0.
-- Sin `CENTRO_IA_KEY`: mensaje claro de qué falta + código 1; `listar`,
-  `capturas`, `informe`, `doctor`… siguen funcionando (verificado).
-- Servidor caído (503 real): mensaje humano «respóndido 503 … inténtalo más
-  tarde», código 1, sin traceback.
-- Certificado auto-firmado del centro: validado con `ca-simarro.crt`; sin él,
-  el error explica cómo añadir la CA (o `IA_TLS_VERIFICAR=0` solo en la red
-  del instituto). Nunca se imprime la clave en ningún mensaje.
-- `doctor` añade la fila «IA del centro» (⚠ si faltan las variables).
-- `tests/test_ia.py`: 11 tests sin tocar la red (`monkeypatch` + `urlopen`
-  parcheado). Suite completa: 34 tests en verde.
+Comprobado en modo aislado, sin red del centro:
 
-Pendiente para la semana 4: GitHub Actions, release v1.0 y prueba de
-instalación en otro sistema.
+- `tareas comprobar-ia` sin clave: «Falta CENTRO_IA_URL, CENTRO_IA_KEY…» +
+  aviso de que el resto sigue, **código 4**.
+- `tareas comprobar-ia` con el servidor caído: «No hay conexión con el
+  servidor del centro…», **código 4**, sin traceback y sin enseñar la clave
+  (solo «clave: definida»).
+- `ejecutar resumir-apuntes --simular` sin clave: presupuesto por fichero
+  («enviaría N caracteres (~M tokens, sin gastar)») y **código 0**.
+- `ejecutar resumir-apuntes` / `clasificar-apuntes` / `renombrar-apuntes` sin
+  clave: **código 4**, ningún fichero tocado.
+- `max_caracteres: 400` en el JSON: «debe ser un entero entre 500 y 50000»,
+  **código 3**. Lo mismo para `categorias` ausentes o repetidas y para
+  `instrucciones` vacío.
+- Fichero sin texto extraíble: estado `saltado` con su motivo, no un error.
+- Las órdenes que no son de IA (`validar`, `acciones`, `version`, `doctor`,
+  `ejecutar` sin IA) siguen saliendo **0** con el entorno vacío.
+- `tareas acciones` enseña la columna **IA** y el pie «las N restantes
+  funcionan sin red».
+- `tests/test_ia.py`: 12 tests con `httpx.post` parcheado (sin red).
+  `tests/test_acciones.py`: limpia de `a_nombre_seguro`, categorías con
+  tildes y simulación que no mueve nada. Suite completa: **37 tests en
+  verde** y 8 fallos preexistentes escritos en Linux (`uv`, `/home/...`).
+
+Pendiente hasta la semana 4: `uv sync` para meter `httpx`, `python-dotenv` y
+`pypdf` en `uv.lock`, y probar las tres acciones contra el servidor real
+del centro desde la red del instituto.

@@ -63,6 +63,11 @@ def fecha_legible(marca: float) -> str:
 
 def _mostrar_error(error: TareasError) -> NoReturn:
     consola_err.print(f"[red]✘ {escape(str(error))}[/red]")
+    if isinstance(error, modulo_ia.IANoDisponible):
+        consola_err.print(
+            "[dim]Las acciones sin IA siguen funcionando: "
+            "mira cuáles con «tareas acciones».[/dim]"
+        )
     raise typer.Exit(code=error.codigo_salida)
 
 
@@ -755,6 +760,27 @@ def doctor(ctx: typer.Context) -> None:
         return
 
     consola.print("[green]✔ Todo listo.[/green]")
+
+
+@app.command("comprobar-ia")
+def comprobar_ia() -> None:
+    """Comprueba la conexión con el servidor de IA (sin enseñar la clave)."""
+    try:
+        proveedor = modulo_ia.ProveedorCentro.desde_entorno()
+        consola.print(
+            f"Servidor: {escape(proveedor.url)}  ·  "
+            f"modelo: {escape(proveedor.modelo)}  ·  clave: definida"
+        )
+        respuesta = proveedor.completar(
+            "Responde solo con la palabra: ok", "¿Me oyes?", max_tokens=5
+        )
+    except TareasError as error:
+        _mostrar_error(error)
+
+    consola.print(
+        f"[green]✔ El modelo responde «{escape(respuesta.texto)}» "
+        f"en {respuesta.segundos:.1f} s[/green]"
+    )
 
 
 @ia_app.command()

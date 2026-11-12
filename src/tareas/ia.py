@@ -1,8 +1,10 @@
 """Capa IA de «tareas» contra el servidor OpenAI-compatible del centro.
 
-Lee CENTRO_IA_URL y CENTRO_IA_KEY del entorno en el momento de la llamada,
-nunca de ficheros. Sin red o sin clave, lanza excepciones propias con
-mensajes humanos: ninguna otra orden depende de este módulo.
+Todo pasa por la interfaz ProveedorIA: le das texto y te devuelve texto.
+ProveedorCentro habla con httpx usando CENTRO_IA_URL y CENTRO_IA_KEY, que
+lee del entorno (cargando antes el .env de la carpeta si existe); la clave
+nunca se imprime ni se escribe en ningún fichero. Sin clave o sin red lanza
+IANoDisponible (salida 4): ninguna otra orden depende de este módulo.
 """
 
 from __future__ import annotations
@@ -12,12 +14,13 @@ import os
 import re
 import ssl
 import tempfile
-import urllib.error
-import urllib.request
+import time
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+import httpx
 from dotenv import find_dotenv, load_dotenv
 
 from .acciones import Resultado
@@ -33,27 +36,190 @@ CANDIDATOS_CA = (
     Path.home() / ".certs" / "ca-simarro.crt",
 )
 
+SISTEMA_GENERICO = (
+    "Eres el asistente de una CLI escolar de tareas con ficheros. "
+    "Respondes en español claro y breve."
+)
+
+MENSAJE_CONEXION = (
+    "No hay conexión con el servidor del centro. "
+    "Las órdenes sin IA siguen funcionando igual."
+)
+MENSAJE_CERTIFICADO = (
+    "El servidor del centro usa un certificado auto-firmado. Añade su CA "
+    "a tu almacén de sistemas, guarda ca-simarro.crt en "
+    f"{CANDIDATOS_CA[0]} o usa IA_TLS_VERIFICAR=0 (solo en la red del "
+    "instituto, nunca fuera)."
+)
+
+
+class IANoDisponible(TareasError):
+    """Sin clave, sin red o el servidor de IA no responde: las órdenes sin IA siguen."""
+
+    codigo_salida = 4
+
+
+class FaltaClaveIA(IANoDisponible):
+    """Falta CENTRO_IA_KEY o CENTRO_IA_URL en el entorno."""
+
+
+class ErrorRedIA(IANoDisponible):
+    """El servidor del centro no responde o ha devuelto algo no válido."""
+
 
 class ErrorIA(TareasError):
-    """La IA del centro no ha podido responder: mensaje humano, sin traceback."""
+    """La IA respondió, pero su respuesta no sirve: mensaje humano, sin traceback."""
 
     codigo_salida = 1
 
 
-class FaltaClaveIA(ErrorIA):
-    """Falta CENTRO_IA_KEY o CENTRO_IA_URL en el entorno."""
-
-
-class ErrorRedIA(ErrorIA):
-    """El servidor del centro no responde o ha devuelto algo no válido."""
-
-
 @dataclass(frozen=True)
 class RespuestaIA:
-    """Texto limpio que devuelve el modelo, más el modelo usado."""
+    """Texto limpio que devuelve el modelo, con su coste."""
 
     texto: str
     modelo: str
+    tokens_entrada: int = 0
+    tokens_salida: int = 0
+    segundos: float = 0.0
+
+    def resumen(self) -> str:
+        """Lo que gastó esta llamada, para la columna Detalle de las tablas."""
+        return f"{self.tokens_entrada}+{self.tokens_salida} tokens · {self.segundos:.1f} s"
+
+
+class ProveedorIA(ABC):
+    """Lo único que el resto del programa sabe de la IA: le das texto y te devuelve texto."""
+
+    @abstractmethod
+    def completar(
+        self, sistema: str, usuario: str, max_tokens: int = 600
+    ) -> RespuestaIA:
+        ...
+
+
+class ProveedorCentro(ProveedorIA):
+    """Un servidor compatible con la API de OpenAI: el del centro (o cualquier otro)."""
+
+    def __init__(
+        self,
+        url: str,
+        clave: str,
+        modelo: str = MODELO,
+        verificar: bool = True,
+    ) -> None:
+        url = url.rstrip("/")
+        if url.endswith("/chat/completions"):
+            url = url[: -len("/chat/completions")]
+        self.url = url.rstrip("/")
+        self.modelo = modelo
+        self._clave = clave  # «_»: privada; nunca se imprime ni se muestra
+        self._verificar = verificar
+
+    @staticmethod
+    def desde_entorno() -> ProveedorCentro:
+        """Fábrica: carga el .env si lo hay y arma el proveedor con lo que encuentre."""
+        cargar_dotenv()
+        url = os.environ.get("CENTRO_IA_URL", "").strip()
+        clave = os.environ.get("CENTRO_IA_KEY", "").strip()
+        faltan = [
+            nombre
+            for nombre, valor in (
+                ("CENTRO_IA_URL", url),
+                ("CENTRO_IA_KEY", clave),
+            )
+            if not valor
+        ]
+        if faltan:
+            raise FaltaClaveIA(
+                f"Falta {', '.join(faltan)}: añádela a tu sesión o al .env "
+                "(mira .env.example). Sin ellas las órdenes con IA no "
+                "funcionan; el resto de tareas sigue igual."
+            )
+        return ProveedorCentro(url, clave, MODELO, _verificacion_activa())
+
+    def completar(
+        self, sistema: str, usuario: str, max_tokens: int = 600
+    ) -> RespuestaIA:
+        """Pide al modelo una completación y devuelve su texto ya limpio."""
+        payload = {
+            "model": self.modelo,
+            "messages": [
+                {"role": "system", "content": sistema},
+                {"role": "user", "content": usuario},
+            ],
+            "temperature": 0.2,
+            "max_tokens": max_tokens,
+        }
+        inicio = time.perf_counter()
+        cuerpo = self._post_chat(payload)
+        try:
+            mensaje = cuerpo["choices"][0]["message"]["content"]
+        except (KeyError, IndexError, TypeError):
+            raise ErrorRedIA(
+                "El centro ha contestado sin el campo esperado; "
+                "inténtalo otra vez en unos minutos."
+            ) from None
+        texto = (mensaje or "").strip()
+        if not texto:
+            raise ErrorRedIA("El centro ha contestado vacío; inténtalo otra vez.")
+        uso = cuerpo.get("usage") or {}
+        return RespuestaIA(
+            texto=texto,
+            modelo=self.modelo,
+            tokens_entrada=int(uso.get("prompt_tokens", 0) or 0),
+            tokens_salida=int(uso.get("completion_tokens", 0) or 0),
+            segundos=time.perf_counter() - inicio,
+        )
+
+    def _post_chat(self, payload: dict[str, Any]) -> dict[str, Any]:
+        """Envía la petición al centro y devuelve el JSON ya parseado.
+
+        Si el equipo tiene certificado auto-firmado se reintenta una vez sin
+        verificar, solo cuando el fallo pinta a certificado. Cada fallo se
+        convierte en un mensaje humano: nunca hay traceback ni clave a la vista.
+        """
+
+        def enviar(verificar: bool) -> httpx.Response:
+            return httpx.post(
+                f"{self.url}/chat/completions",
+                json=payload,
+                headers={
+                    "Accept": "application/json",
+                    "Authorization": f"Bearer {self._clave}",
+                },
+                timeout=httpx.Timeout(TIMEOUT_S, connect=10),
+                verify=_contexto_ssl(verificar),
+            )
+
+        intentos = (True, False) if self._verificar else (False,)
+        for posicion, verificar in enumerate(intentos):
+            try:
+                respuesta = enviar(verificar)
+                respuesta.raise_for_status()
+            except httpx.HTTPStatusError as exc:
+                raise _error_http(exc) from None
+            except (
+                httpx.ConnectError,
+                httpx.ConnectTimeout,
+                ssl.SSLCertVerificationError,
+            ) as exc:
+                if verificar and posicion == 0:
+                    continue  # se reintenta una vez sin verificar
+                if _es_certificado(exc):
+                    raise ErrorRedIA(MENSAJE_CERTIFICADO) from None
+                raise ErrorRedIA(MENSAJE_CONEXION) from None
+            except httpx.TimeoutException:
+                raise ErrorRedIA(
+                    f"El servidor de IA no ha respondido a tiempo ({TIMEOUT_S} s)."
+                ) from None
+            try:
+                return respuesta.json()
+            except json.JSONDecodeError as exc:
+                raise ErrorRedIA(
+                    f"El centro ha devuelto algo que no es JSON: {exc.msg}."
+                ) from None
+        raise ErrorRedIA(MENSAJE_CONEXION) from None
 
 
 def cargar_dotenv() -> None:
@@ -68,25 +234,13 @@ def cargar_dotenv() -> None:
         load_dotenv(ruta)
 
 
-def _leer_env(clave: str) -> str:
-    """Devuelve la variable de entorno o lanza FaltaClaveIA con mensaje claro."""
-    cargar_dotenv()
-    valor = os.environ.get(clave, "").strip()
-    if not valor:
-        raise FaltaClaveIA(
-            f"Falta la variable de entorno {clave}. Añádela a tu sesión "
-            "(mira .env.example). Sin ella las órdenes con IA no funcionan; "
-            "el resto de tareas sigue igual."
-        )
-    return valor
-
-
-def _url_base() -> str:
-    """Quita la parte /chat/completions si el alumno la puso en CENTRO_IA_URL."""
-    base = _leer_env("CENTRO_IA_URL").rstrip("/")
-    if base.endswith("/chat/completions"):
-        base = base[: -len("/chat/completions")]
-    return base.rstrip("/")
+def _verificacion_activa() -> bool:
+    """IA_TLS_VERIFICAR=0 es solo para redes escolares con CA propia."""
+    return os.environ.get("IA_TLS_VERIFICAR", "").strip().lower() not in {
+        "0",
+        "false",
+        "no",
+    }
 
 
 def _buscar_ca() -> Path | None:
@@ -103,13 +257,12 @@ def _buscar_ca() -> Path | None:
 def _contexto_ssl(verificar: bool) -> ssl.SSLContext:
     """Contexto TLS normal, con la CA del centro si la pilla, o sin verificación.
 
-    Usar CAISPACE=0 es solo para redes escolares con certificado auto-firmado:
-    evita el error CERTIFICATE_VERIFY_FAILED sin bajar la verificación en
-    cualquier otro sitio.
+    Usar IA_TLS_VERIFICAR=0 es solo para redes escolares con certificado
+    auto-firmado: evita CERTIFICATE_VERIFY_FAILED sin bajar la verificación
+    en cualquier otro sitio.
     """
     if not verificar:
-        contexto = ssl._create_unverified_context()
-        return contexto
+        return ssl._create_unverified_context()
     contexto = ssl.create_default_context()
     ca = _buscar_ca()
     if ca is not None:
@@ -120,99 +273,38 @@ def _contexto_ssl(verificar: bool) -> ssl.SSLContext:
     return contexto
 
 
-def _post_chat(payload: dict[str, Any]) -> dict[str, Any]:
-    """Envía la petición al centro y devuelve el JSON ya parseado.
+def _es_certificado(exc: BaseException) -> bool:
+    """¿Este fallo de red huele a certificado? Mira la cadena de causas."""
+    actual: BaseException | None = exc
+    while actual is not None:
+        if isinstance(actual, ssl.SSLCertVerificationError):
+            return True
+        if "CERTIFICATE" in str(actual).upper():
+            return True
+        actual = actual.__cause__ or actual.__context__
+    return False
 
-    Si el equipo tiene certificado auto-firmado (CAISPACE=0) se reintentará
-    sin verificación, pero solo con ese flag explícito.
-    """
-    url = _url_base() + "/chat/completions"
-    datos = json.dumps(payload).encode("utf-8")
-    peticion = urllib.request.Request(
-        url,
-        data=datos,
-        method="POST",
-        headers={
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-            "Authorization": f"Bearer {_leer_env('CENTRO_IA_KEY')}",
-        },
-    )
-    verificar = os.environ.get("IA_TLS_VERIFICAR", "").strip().lower() not in {
-        "0",
-        "false",
-        "no",
+
+def _error_http(exc: httpx.HTTPStatusError) -> ErrorRedIA:
+    """Un error HTTP con su motivo en español; la clave jamás aparece."""
+    codigo = exc.response.status_code
+    motivos = {
+        401: "la clave no es válida (revisa CENTRO_IA_KEY)",
+        429: "demasiadas peticiones, espera un minuto",
     }
-    intentos = (True, False) if verificar else (False,)
-    ultimo_error: Exception | None = None
-    for verificar_en_intento in intentos:
-        contexto = _contexto_ssl(verificar_en_intento)
-        try:
-            with urllib.request.urlopen(
-                peticion, timeout=TIMEOUT_S, context=contexto
-            ) as respuesta:
-                cuerpo = respuesta.read().decode("utf-8", errors="replace")
-        except urllib.error.HTTPError as exc:
-            raise ErrorRedIA(
-                f"El servidor del centro ha respondido {exc.code} {exc.reason}. "
-                "Revisa CENTRO_IA_URL, CENTRO_IA_KEY o inténtalo más tarde."
-            ) from None
-        except ssl.SSLCertVerificationError as exc:
-            ultimo_error = exc
-            continue
-        except (urllib.error.URLError, TimeoutError, ConnectionError, OSError) as exc:
-            ultimo_error = exc
-            continue
-        try:
-            return json.loads(cuerpo)
-        except json.JSONDecodeError as exc:
-            raise ErrorRedIA(
-                f"El centro ha devuelto algo que no es JSON: {exc.msg}."
-            ) from None
-
-    if isinstance(ultimo_error, ssl.SSLCertVerificationError):
-        raise ErrorRedIA(
-            "El servidor del centro usa un certificado auto-firmado. Añade su CA "
-            "a tu almacén de sistemas, guarda ca-simarro.crt en "
-            f"{CANDIDATOS_CA[0]} o usa IA_TLS_VERIFICAR=0 (solo en la red del "
-            "instituto, nunca fuera)."
-        ) from None
-    raise ErrorRedIA(
-        "No hay conexión con el servidor del centro. "
-        "Las órdenes sin IA siguen funcionando igual."
-    ) from None
+    motivo = motivos.get(codigo)
+    if motivo:
+        return ErrorRedIA(f"El servidor de IA responde {codigo}: {motivo}.")
+    return ErrorRedIA(
+        f"El servidor del centro ha respondido {codigo}. "
+        "Revisa CENTRO_IA_URL, CENTRO_IA_KEY o inténtalo más tarde."
+    )
 
 
 def hablar(prompt: str, max_tokens: int = 600) -> RespuestaIA:
-    """Pregunta al modelo del centro y devuelve su texto limpio."""
-    cuerpo = _post_chat(
-        {
-            "model": MODELO,
-            "temperature": 0.2,
-            "max_tokens": max_tokens,
-            "messages": [
-                {
-                    "role": "system",
-                    "content": (
-                        "Eres el asistente de una CLI escolar de tareas con "
-                        "ficheros. Respondes en español claro y breve."
-                    ),
-                },
-                {"role": "user", "content": prompt},
-            ],
-        }
-    )
-    try:
-        mensaje = cuerpo["choices"][0]["message"]["content"]
-    except (KeyError, IndexError, TypeError) as exc:
-        raise ErrorRedIA(
-            "El centro ha contestado sin el campo esperado; "
-            "inténtalo otra vez en unos minutos."
-        ) from None
-    texto = (mensaje or "").strip()
-    if not texto:
-        raise ErrorRedIA("El centro ha contestado vacío; inténtalo otra vez.")
-    return RespuestaIA(texto=texto, modelo=MODELO)
+    """Pregunta al modelo del centro y devuelve su respuesta ya limpia."""
+    proveedor = ProveedorCentro.desde_entorno()
+    return proveedor.completar(SISTEMA_GENERICO, prompt, max_tokens)
 
 
 def _extraer_json(texto: str) -> str:

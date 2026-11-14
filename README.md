@@ -682,8 +682,17 @@ Comprobado en modo aislado, sin red del centro:
   funcionan sin red».
 - `tests/test_ia.py`: 12 tests con `httpx.post` parcheado (sin red).
   `tests/test_acciones.py`: limpia de `a_nombre_seguro`, categorías con
-  tildes y simulación que no mueve nada. Suite completa: **37 tests en
-  verde** y 8 fallos preexistentes escritos en Linux (`uv`, `/home/...`).
+  tildes y simulación que no mueve nada. Suite completa: **45 tests en
+  verde** con `uv run pytest tests -q`, sin fallos en Windows.
+- Salida en UTF-8 desde el arranque (`src/tareas/__init__.py`): en Windows
+  la salida va en cp1252 y el `✔` de `validar` o el banner de `hola`
+  reventaban con `UnicodeEncodeError` (sobre todo con la salida redirigida
+  a un fichero o a un tubo, que es como trabajan los tests). Ahora se
+  reconfiguran `stdout` y `stderr` a UTF-8 con `errors="replace"` y todo
+  escribe igual en Linux, Windows y macOS.
+- Para probar la capa IA existe `~/pruebas-tareas` con `Apuntes` (2 `.txt`
+  de ejemplo), `Resúmenes` y `Clasificados`: con `--simular`, las tres
+  acciones de IA encuentran los 2 apuntes y salen 0.
 
 `uv.lock` ya incluye `httpx`, `python-dotenv` y `pypdf`. Pendiente hasta la
 semana 4: probar las tres acciones contra el servidor real del centro desde la

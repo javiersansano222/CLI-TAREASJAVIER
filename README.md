@@ -105,11 +105,18 @@ Cierra y abre PowerShell. Si sigue sin aparecer, añade esta carpeta al PATH:
 %USERPROFILE%\.local\bin
 ```
 
-### Rutas de acciones en Windows
+### Rutas de acciones en Windows y macOS
 
 `acciones.json` usa rutas de Linux en español (`~/Descargas`, `~/Imágenes`,
-`~/Documentos`). En Windows suelen ser `Downloads`, `Pictures` y `Documents`.
-Cambia el JSON o crea otro fichero y pásalo con `--config`.
+`~/Documentos`). En Windows y macOS las carpetas del home se llaman `Downloads`,
+`Pictures` y `Documents` **en disco** (Finder puede mostrarlas traducidas, pero
+la ruta real es la inglesa). Cambia el JSON o usa uno de los ficheros listos
+con `--config`:
+
+- `acciones-win.json`: capturas en `~/Pictures/Screenshots`, instaladores
+  `.exe`/`.msi`.
+- `acciones-mac.json`: capturas en `~/Desktop` (ahí las guarda macOS por
+  defecto), instaladores `.dmg`/`.pkg`.
 
 ## Uso rápido
 
@@ -464,16 +471,26 @@ acción destructiva vea todos los ficheros.
 | 🗂️ `clasificar-apuntes` | clasificar | Mueve cada apunte a la subcarpeta de su asignatura. |
 
 Las rutas de `acciones.json` son las de mi equipo Linux en español. En Windows
-o macOS pueden llamarse `Downloads` o `Pictures`: se cambian en el JSON o se
-crea otro fichero y se pasa con `--config`.
-
-En Windows hay un fichero listo, `acciones-win.json`, con las mismas 8 acciones
-pero apuntando a `~/Downloads`, `~/Pictures/Screenshots` y `~/Documents`:
+y macOS las carpetas del home llevan nombre inglés en disco, así que hay un
+fichero listo por sistema, con las mismas 8 acciones y solo cambian dos cosas:
+dónde van las capturas y qué extensión tienen los instaladores.
 
 ```powershell
+# Windows: capturas en ~/Pictures/Screenshots, instaladores .exe/.msi
 uv run tareas --config acciones-win.json validar
 uv run tareas --config acciones-win.json ejecutar renombrar-capturas --simular
 ```
+
+```bash
+# macOS: capturas en ~/Desktop (el destino por defecto de screencapture),
+# instaladores .dmg/.pkg
+tareas --config acciones-mac.json validar
+tareas --config acciones-mac.json ejecutar renombrar-capturas --simular
+```
+
+Si en tu Mac guardas las capturas en otra carpeta, cámbialo con
+`defaults write com.apple.screencapture location ~/Pictures/Screenshots` y
+ajusta el `origen` de `renombrar-capturas` en el JSON.
 
 `acciones.json` no se empaqueta con la instalación: fuera del repositorio,
 las órdenes que lo necesitan (`validar`, `acciones`, `ejecutar`) dan código 3

@@ -1,0 +1,92 @@
+{
+  "version": 1,
+  "acciones": [
+    {
+      "nombre": "limpiar-temporales",
+      "descripcion": "Borra los ficheros .tmp de Downloads con más de 30 días.",
+      "tipo": "borrar",
+      "origen": "~/Downloads",
+      "filtro": {
+        "patron": "(?i).*\\.tmp$",
+        "mas_antiguo_que_dias": 30
+      },
+      "confirmar": true
+    },
+    {
+      "nombre": "mover-imagenes",
+      "descripcion": "Mueve las imágenes de Downloads a la carpeta de fotos.",
+      "tipo": "mover",
+      "origen": "~/Downloads",
+      "filtro": {
+        "extensiones": [".jpg", ".jpeg", ".png", ".gif", ".webp"]
+      },
+      "destino": "~/Pictures/Fotos"
+    },
+    {
+      "nombre": "renombrar-capturas",
+      "descripcion": "Renombra las capturas del Escritorio con su fecha: 2026-10-27_001.png.",
+      "tipo": "renombrar",
+      "origen": "~/Desktop",
+      "filtro": {
+        "patron": "(?i)^(captura de pantalla|screenshot|screen shot|img_|pxl_).*\\.(png|jpe?g)$"
+      },
+      "plantilla": "{fecha:%Y-%m-%d}_{n:03}{ext}"
+    },
+    {
+      "nombre": "copiar-instaladores",
+      "descripcion": "Copia los instaladores .dmg y .pkg de Downloads a una carpeta de respaldo.",
+      "tipo": "copiar",
+      "origen": "~/Downloads",
+      "filtro": {
+        "extensiones": [".dmg", ".pkg"]
+      },
+      "destino": "~/Documents/Instaladores"
+    },
+    {
+      "nombre": "mirar-espacio",
+      "descripcion": "Muestra el espacio total y número de ficheros de una carpeta.",
+      "tipo": "mirar_espacio",
+      "origen": "~/",
+      "filtro": {}
+    },
+    {
+      "nombre": "resumir-apuntes",
+      "descripcion": "Resume con la IA los apuntes en PDF, TXT o MD en un .resumen.md.",
+      "tipo": "resumir",
+      "origen": "~/pruebas-tareas/Apuntes",
+      "destino": "~/pruebas-tareas/Resúmenes",
+      "filtro": {
+        "extensiones": [".pdf", ".txt", ".md"]
+      },
+      "instrucciones": "Resume este apunte para repasarlo antes del examen. Termina SIEMPRE con una viñeta que empiece por «Para el examen:» y recoja los 2 o 3 puntos que más se suelen olvidar.",
+      "max_caracteres": 12000,
+      "confirmar": false
+    },
+    {
+      "nombre": "renombrar-apuntes",
+      "descripcion": "Les pone a los apuntes un nombre claro con la IA (la extensión no cambia).",
+      "tipo": "renombrar_ia",
+      "origen": "~/pruebas-tareas/Apuntes",
+      "filtro": {
+        "extensiones": [".pdf", ".txt", ".md"]
+      },
+      "instrucciones": "Propón un nombre que diga de qué trata el apunte, en minúsculas y con guiones (ej: programacion-tema5-herencia). No inventes contenido.",
+      "max_caracteres": 4000,
+      "confirmar": false
+    },
+    {
+      "nombre": "clasificar-apuntes",
+      "descripcion": "Mueve cada apunte a la subcarpeta de su asignatura según la IA.",
+      "tipo": "clasificar",
+      "origen": "~/pruebas-tareas/Apuntes",
+      "destino": "~/pruebas-tareas/Clasificados",
+      "filtro": {
+        "extensiones": [".pdf", ".txt", ".md"]
+      },
+      "categorias": ["programacion", "bases-de-datos", "lenguajes-marcas", "sistemas-operativos", "otro"],
+      "instrucciones": "Lee el apunte y elige la categoría que mejor lo describa. Si no encaja con ninguna, responde «otro».",
+      "max_caracteres": 8000,
+      "confirmar": false
+    }
+  ]
+}

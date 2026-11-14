@@ -467,6 +467,19 @@ Las rutas de `acciones.json` son las de mi equipo Linux en español. En Windows
 o macOS pueden llamarse `Downloads` o `Pictures`: se cambian en el JSON o se
 crea otro fichero y se pasa con `--config`.
 
+En Windows hay un fichero listo, `acciones-win.json`, con las mismas 8 acciones
+pero apuntando a `~/Downloads`, `~/Pictures/Screenshots` y `~/Documents`:
+
+```powershell
+uv run tareas --config acciones-win.json validar
+uv run tareas --config acciones-win.json ejecutar renombrar-capturas --simular
+```
+
+`acciones.json` no se empaqueta con la instalación: fuera del repositorio,
+las órdenes que lo necesitan (`validar`, `acciones`, `ejecutar`) dan código 3
+si no les pasas `--config` con la ruta. `version`, `hola`, `sistema`,
+`comprobar-ia` y el menú no lo necesitan.
+
 ## Estructura
 
 ```text

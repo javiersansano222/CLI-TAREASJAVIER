@@ -118,6 +118,12 @@ con `--config`:
 - `acciones-mac.json`: capturas en `~/Desktop` (ahí las guarda macOS por
   defecto), instaladores `.dmg`/`.pkg`.
 
+```powershell
+# Ejemplo en Windows (en macOS, igual con tareas en vez de uv run tareas)
+uv run tareas --config acciones-win.json validar
+uv run tareas --config acciones-win.json ejecutar renombrar-capturas --simular
+```
+
 ## Uso rápido
 
 ```bash
@@ -506,10 +512,14 @@ cli-tareas/
 ├── .python-version
 ├── .gitignore
 ├── .gitattributes
+├── .env.example              Plantilla de claves (sin valores)
 ├── opencode.json              Permisos del agente
 ├── AGENTS.md                  Normas del proyecto
 ├── README.md
-├── acciones.json              Mis acciones
+├── prompt.txt                 Lo que queda para clase
+├── acciones.json              Mis acciones (rutas de Linux)
+├── acciones-win.json          Lo mismo, con rutas de Windows
+├── acciones-mac.json          Lo mismo, con rutas de macOS
 ├── .opencode/
 │   ├── skills/acciones-json/SKILL.md
 │   ├── commands/nueva-accion.md
@@ -519,6 +529,7 @@ cli-tareas/
 │   └── adr/
 │       ├── 0001-configuracion-externa.md
 │       └── 0002-ia-interfaz-y-salida-4.md
+├── tests/                     Suite con pytest (37 en verde)
 └── src/
     └── tareas/
         ├── __init__.py        Versión del paquete
@@ -674,6 +685,6 @@ Comprobado en modo aislado, sin red del centro:
   tildes y simulación que no mueve nada. Suite completa: **37 tests en
   verde** y 8 fallos preexistentes escritos en Linux (`uv`, `/home/...`).
 
-Pendiente hasta la semana 4: `uv sync` para meter `httpx`, `python-dotenv` y
-`pypdf` en `uv.lock`, y probar las tres acciones contra el servidor real
-del centro desde la red del instituto.
+`uv.lock` ya incluye `httpx`, `python-dotenv` y `pypdf`. Pendiente hasta la
+semana 4: probar las tres acciones contra el servidor real del centro desde la
+red del instituto.

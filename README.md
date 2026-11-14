@@ -13,11 +13,54 @@ Mi herramienta de línea de órdenes para automatizar tareas repetitivas con fic
 7. **Plataformas:** Linux primero; también Windows y macOS.
 8. **Códigos de salida:** 0 bien · 1 fallo al ejecutar · 2 uso incorrecto · 3 configuración inválida.
 9. **Seguridad:** toda acción, `capturas`, `temporales` e `imagenes` se pueden simular con `--simular`; nunca se sobrescribe un fichero ni un enlace existente y las imágenes siempre se guardan como copias.
-10. **Instalación:** `uv tool install --editable .` (se completa en la semana 4).
+10. **Instalación:** un solo comando con `instalar.ps1` (Windows) o `instalar.sh` (macOS/Linux); para desarrollar, `uv tool install --editable .`.
 
 ## Instalación en otro equipo
 
 Antes de instalar en otro equipo, sube los últimos cambios con `git push`.
+
+### Un solo comando (recomendado)
+
+Baja todo de GitHub: no hace falta Git ni clonar el repo.
+
+**Windows (PowerShell):**
+
+```powershell
+powershell -c "irm https://raw.githubusercontent.com/javiersansano222/CLI-TAREASJAVIER/main/instalar.ps1 | iex"
+```
+
+**macOS / Linux (terminal):**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/javiersansano222/CLI-TAREASJAVIER/main/instalar.sh | bash
+```
+
+El script (está en el repo: `instalar.ps1` y `instalar.sh`) hace, en este
+orden:
+
+1. Instala `uv` y Python 3.12 si faltan.
+2. Baja la CLI desde GitHub y la instala (`uv tool install … --force`).
+3. La pone en el PATH (`uv tool update-shell`).
+4. Copia a tu carpeta de inicio `.env` (plantilla) y `acciones.json`
+   (rutas de tu sistema) **solo si no existen**: nunca pisa tu `.env`.
+5. Crea `~/pruebas-tareas` con `Apuntes`, `Resúmenes` y `Clasificados`.
+6. Comprueba la instalación con `tareas version` y `tareas validar`.
+
+Al terminar, **cierra y vuelve a abrir la terminal** y escribe
+`tareas --help`, `hola` y `tareas validar`. Recuerda rellenar `.env` con tu
+clave: sin ella las órdenes de IA salen con código 4. Para actualizar,
+vuelve a lanzar la misma línea.
+
+Si prefieres verlo antes de ejecutarlo:
+
+```powershell
+git clone https://github.com/javiersansano222/CLI-TAREASJAVIER.git
+cd CLI-TAREASJAVIER
+powershell -ExecutionPolicy Bypass -File instalar.ps1   # Windows
+bash instalar.sh                                        # macOS / Linux
+```
+
+### Instalación a mano
 
 Requisitos: Git y `uv` instalados. `uv` puede instalar Python 3.12.
 
@@ -517,6 +560,8 @@ cli-tareas/
 ├── AGENTS.md                  Normas del proyecto
 ├── README.md
 ├── prompt.txt                 Lo que queda para clase
+├── instalar.ps1               Instalación en un solo comando (Windows)
+├── instalar.sh                Ídem, para macOS y Linux
 ├── acciones.json              Mis acciones (rutas de Linux)
 ├── acciones-win.json          Lo mismo, con rutas de Windows
 ├── acciones-mac.json          Lo mismo, con rutas de macOS
@@ -529,10 +574,10 @@ cli-tareas/
 │   └── adr/
 │       ├── 0001-configuracion-externa.md
 │       └── 0002-ia-interfaz-y-salida-4.md
-├── tests/                     Suite con pytest (37 en verde)
+├── tests/                     Suite con pytest (45 en verde)
 └── src/
     └── tareas/
-        ├── __init__.py        Versión del paquete
+        ├── __init__.py        Versión y salida en UTF-8
         ├── __main__.py        python -m tareas
         ├── bienvenida.py      Banner ASCII de bienvenida
         ├── capturas.py        Detecta capturas y las manda a la papelera

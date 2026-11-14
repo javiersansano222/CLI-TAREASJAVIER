@@ -14,7 +14,8 @@ def test_cli_validar():
     result = subprocess.run(
         ["uv", "run", "tareas", "validar"],
         capture_output=True,
-        text=True,
+        encoding="utf-8",
+        errors="replace",
         cwd=RAIZ,
     )
     assert result.returncode == 0
@@ -27,7 +28,8 @@ def test_cli_mirar_espacio_simular():
     result = subprocess.run(
         ["uv", "run", "tareas", "mirar-espacio", "--simular"],
         capture_output=True,
-        text=True,
+        encoding="utf-8",
+        errors="replace",
         cwd=RAIZ,
     )
     assert result.returncode == 0
@@ -40,7 +42,8 @@ def test_cli_acciones():
     result = subprocess.run(
         ["uv", "run", "tareas", "acciones"],
         capture_output=True,
-        text=True,
+        encoding="utf-8",
+        errors="replace",
         cwd=RAIZ,
     )
     assert result.returncode == 0
@@ -53,7 +56,8 @@ def test_cli_ayuda_general():
     result = subprocess.run(
         ["uv", "run", "tareas", "--help"],
         capture_output=True,
-        text=True,
+        encoding="utf-8",
+        errors="replace",
         cwd=RAIZ,
     )
     assert result.returncode == 0
@@ -65,7 +69,8 @@ def test_cli_version():
     result = subprocess.run(
         ["uv", "run", "tareas", "version"],
         capture_output=True,
-        text=True,
+        encoding="utf-8",
+        errors="replace",
         cwd=RAIZ,
     )
     assert result.returncode == 0

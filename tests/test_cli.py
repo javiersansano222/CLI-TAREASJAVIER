@@ -6,6 +6,8 @@ Una prueba por código de salida (0, 1, 2, 3 y 4). Nada de subprocess ni de
 
 from __future__ import annotations
 
+import re
+
 import pytest
 from typer.testing import CliRunner
 
@@ -22,9 +24,16 @@ ACCION_RESUMIR = {
 }
 
 
+# Click colorea las opciones cuando la terminal lo admite y en GitHub Actions
+# lo hace: "--inventada" llega partido por los códigos de color. Se quitan antes
+# de mirar el texto para que la prueba no dependa del entorno.
+COLORES = re.compile(r"\x1b\[[0-9;]*m")
+
+
 def salida(resultado) -> str:
-    """stdout + stderr: Rich manda los errores por la salida de error."""
-    return (resultado.output or "") + (getattr(resultado, "stderr", "") or "")
+    """stdout + stderr, sin colores: Rich manda los errores por la salida de error."""
+    texto = (resultado.output or "") + (getattr(resultado, "stderr", "") or "")
+    return COLORES.sub("", texto)
 
 
 def test_la_ayuda_funciona():
@@ -70,7 +79,11 @@ def test_accion_que_no_existe_sale_con_1(escribir_config, descargas):
 
 def test_opcion_que_no_existe_sale_con_2():
     """Código 2: error de uso, la opción no existe."""
-    resultado = runner.invoke(app, ["listar", "--inventada"])
+    # Con FORCE_COLOR se pinta igual que en GitHub Actions; salida() quita los
+    # colores antes de comparar, así la prueba vale en cualquier terminal.
+    resultado = runner.invoke(
+        app, ["listar", "--inventada"], env={"FORCE_COLOR": "1"}
+    )
     assert resultado.exit_code == 2
     assert "--inventada" in salida(resultado)
 

@@ -11,6 +11,7 @@ import re
 import pytest
 from typer.testing import CliRunner
 
+from tareas import ajustes
 from tareas.cli import app
 
 runner = CliRunner()
@@ -105,3 +106,106 @@ def test_ia_sin_clave_sale_con_4(escribir_config, tmp_path):
     )
     assert resultado.exit_code == 4
     assert "siguen funcionando" in salida(resultado)
+
+
+def test_tema_sin_argumentos_lista_los_disponibles():
+    """`tareas tema` no cambia nada: enseña los temas que hay."""
+    resultado = runner.invoke(app, ["tema"])
+    assert resultado.exit_code == 0
+    texto = salida(resultado)
+    for nombre in ("medianoche", "matrix", "papel", "ambar", "oceano", "contraste"):
+        assert nombre in texto
+
+
+def test_tema_vista_previa_no_guarda_nada():
+    """`--ver` enseña el tema y no deja rastro en los ajustes."""
+    resultado = runner.invoke(app, ["tema", "--ver", "matrix"])
+    assert resultado.exit_code == 0
+    assert "matrix" in salida(resultado)
+    assert not ajustes.ruta().exists()
+
+
+def test_tema_aplica_y_lo_recuerda():
+    """Aplicar manda las secuencias OSC y guarda el tema para el menú."""
+    resultado = runner.invoke(app, ["tema", "matrix"], env={"WT_SESSION": "1"})
+    assert resultado.exit_code == 0
+    texto = salida(resultado)
+    assert "\x1b]11;rgb:05/08/05" in texto  # fondo de matrix
+    assert "aplicado" in texto
+    assert ajustes.tema_elegido() == "matrix"
+
+
+def test_tema_avisa_si_el_terminal_no_admite_colores():
+    """En un terminal sin OSC no se miente: se avisa y no se guarda nada."""
+    resultado = runner.invoke(
+        app, ["tema", "matrix"], env={"TERM": "dumb", "WT_SESSION": ""}
+    )
+    assert resultado.exit_code == 0
+    assert "no admite" in salida(resultado)
+    assert ajustes.tema_elegido() is None
+
+
+def test_tema_crear_guarda_el_tema_propio():
+    """Un tema propio se crea con tres colores y se puede volver a usar."""
+    resultado = runner.invoke(
+        app,
+        [
+            "tema",
+            "--crear",
+            "mi-tema",
+            "--desde",
+            "oceano",
+            "--fondo",
+            "#001018",
+            "--texto",
+            "#c8f0ff",
+            "--cursor",
+            "#22d3ee",
+        ],
+    )
+    assert resultado.exit_code == 0
+    assert "guardado" in salida(resultado)
+    propio = ajustes.buscar_tema("mi-tema")
+    assert propio.fondo == "#001018"
+    assert len(propio.ansi) == 16
+
+
+@pytest.mark.parametrize(
+    "argumentos",
+    [
+        ["--crear", "con espacios", "--fondo", "#000000", "--texto", "#ffffff", "--cursor", "#ffff00"],
+        ["--crear", "otro", "--fondo", "rojo", "--texto", "#ffffff", "--cursor", "#ffff00"],
+        ["--crear", "tercero"],
+    ],
+)
+def test_tema_crear_con_datos_malos_sale_con_2(argumentos):
+    """Un error de uso (nombre, color o falta de colores) es código 2."""
+    resultado = runner.invoke(app, ["tema", *argumentos])
+    assert resultado.exit_code == 2
+    assert "Traceback" not in salida(resultado)
+
+
+def test_tema_restablecer_olvida_el_tema():
+    """Restablecer devuelve los colores y no vuelve a aplicarse solo."""
+    ajustes.guardar_tema("matrix")
+    resultado = runner.invoke(app, ["tema", "--restablecer"])
+    assert resultado.exit_code == 0
+    assert "\x1b]110;" in salida(resultado)
+    assert ajustes.tema_elegido() is None
+
+
+def test_tema_exportar_escribe_los_tres_ficheros(tmp_path):
+    """Exportar deja los ficheros de los tres terminales en el destino."""
+    destino = tmp_path / "salida"
+    resultado = runner.invoke(
+        app, ["tema", "--exportar", "papel", "--destino", str(destino)]
+    )
+    assert resultado.exit_code == 0
+    assert len(list(destino.iterdir())) == 3
+
+
+def test_tema_desconocido_sale_con_1():
+    """Código 1: el tema pedido no existe y el mensaje dice cuáles hay."""
+    resultado = runner.invoke(app, ["tema", "neon"])
+    assert resultado.exit_code == 1
+    assert "No hay ningún tema" in salida(resultado)

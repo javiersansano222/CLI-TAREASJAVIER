@@ -91,15 +91,15 @@ con **una orden**:
 
 ```bash
 uv python install 3.12
-uv tool install git+https://github.com/javiersansano222/CLI-TAREASJAVIER@v1.0.0
+uv tool install git+https://github.com/javiersansano222/CLI-TAREASJAVIER@v1.1.0
 uv tool update-shell   # si «tareas» no aparece en el PATH
 # cierra y abre una terminal nueva
 tareas --help
-tareas version         # debe decir: tareas 1.0.0
+tareas version         # debe decir: tareas 1.1.0
 ```
 
-La etiqueta `@v1.0.0` congela la versión: siempre instala exactamente esa.
-Para la última de `main`, quita `@v1.0.0`.
+La etiqueta `@v1.1.0` congela la versión: siempre instala exactamente esa.
+Para la última de `main`, quita `@v1.1.0`.
 
 ### Primeros pasos
 
@@ -371,7 +371,84 @@ tareas cambio azul
 ```
 
 El cambio afecta al menú de esa sesión, no al tema ni al fondo de la ventana de
-la terminal.
+la terminal. Para eso último está `tareas tema`, en el apartado siguiente.
+
+## Colores de la terminal
+
+`tareas tema` cambia los colores de **todo** el terminal (fondo, texto, cursor
+y los 16 colores ANSI), no solo el del menú. Trae seis temas:
+
+| Tema | Aspecto |
+|---|---|
+| `medianoche` | Azules oscuros, cómodo de noche |
+| `matrix` | Verde sobre negro, tipo consola antigua |
+| `papel` | Claro, tipo folio, para trabajar de día |
+| `ambar` | Naranjas de fósforo, contraste suave |
+| `oceano` | Azules y turquesas, tono frío |
+| `contraste` | Negro y blanco puros, para verlo todo |
+
+```bash
+tareas tema                     # tabla con los seis y el elegido
+tareas tema --ver matrix        # vista previa, sin aplicar ni guardar
+tareas tema matrix              # lo aplica a esta sesión y lo recuerda
+tareas tema --restablecer       # vuelve a los colores originales
+```
+
+Sin argumentos no toca nada: solo enseña la tabla con una muestra de cada tema.
+
+### Un tema propio
+
+`--crear` copia los 16 colores de un tema existente y cambia fondo, texto y
+cursor:
+
+```bash
+tareas tema --crear mi-tema --desde oceano \
+  --fondo "#001018" --texto "#c8f0ff" --cursor "#22d3ee"
+tareas tema --ver mi-tema
+tareas tema mi-tema
+```
+
+El nombre admite letras sin tilde, números, guion y guion bajo (hasta 24
+caracteres). Los colores se escriben en hexadecimal de seis dígitos; si no,
+la orden sale con **código 2** y lo explica.
+
+Los temas propios se guardan en `ajustes.json`, dentro de la carpeta de
+configuración del sistema:
+
+- Windows: `%APPDATA%\tareas\ajustes.json`
+- Linux y macOS: `~/.config/tareas/ajustes.json`
+
+Si el fichero no existe o está roto, se empieza de cero sin avisar y sin
+perder nada más. El tema elegido se vuelve a aplicar al abrir el menú de
+`tareas`.
+
+### Para que dure: exportar
+
+Una secuencia de escape solo dura la sesión. Para dejarlo puesto siempre hay
+que importar el tema en el emulador:
+
+```bash
+tareas tema --exportar matrix
+tareas tema --exportar matrix --destino ~/Escritorio/temas
+```
+
+Genera tres ficheros con el nombre del tema:
+
+- `tareas-matrix-windows-terminal.json`: el objeto se pega dentro de
+  `"schemes"` en el `settings.json` de Windows Terminal y luego se elige en el
+  perfil.
+- `tareas-matrix.itermcolors`: se importa en iTerm2 desde
+  *Profiles → Colors → Color Presets → Import*.
+- `tareas-matrix-gnome.sh`: se ejecuta una vez con `sh` en GNOME Terminal,
+  Tilix o Xfce y cambia el perfil por `gsettings`.
+
+### Hasta dónde llega
+
+Funciona en Windows Terminal (fondo y colores, según versión), iTerm2, kitty,
+WezTerm, Alacritty, VS Code y GNOME Terminal/Tilix. En la consola clásica de
+Windows (`conhost`) y en `TERM=dumb` no se puede: la orden lo dice, explica el
+motivo y recuerda `--exportar` en vez de fallar en silencio. Dentro de tmux o
+screen tampoco, porque el multiplexor se queda las secuencias.
 
 ## Bienvenida personalizada
 
@@ -866,3 +943,35 @@ Pruebas automáticas y release 1.0.0:
 - `scripts/revisar.sh`: el diff preparado se revisa con
   `opencode run --agent revisor`, con `timeout 180` y veredicto convertido en
   código de salida (0 si OK, 1 si hay que cambiar).
+
+## Estado de los temas
+
+Comprobado en Windows Terminal con una carpeta de configuración temporal
+(`TAREAS_CONFIG`), para no tocar los ajustes de verdad:
+
+- `tareas tema` enseña la tabla con los seis temas (`medianoche`, `matrix`,
+  `papel`, `ambar`, `oceano` y `contraste`) y sale con **código 0**. No cambia
+  ningún color ni escribe ajustes.
+- `tareas tema --ver matrix` pinta la vista previa y **no crea**
+  `ajustes.json`; código 0.
+- `tareas tema matrix` manda por la salida estándar `OSC 11` (fondo
+  `rgb:05/08/05`), `OSC 10` (texto `rgb:b9/ff/b3`), `OSC 12` (cursor
+  `rgb:00/ff/66`) y **16 secuencias `OSC 4`**, una por color ANSI. Después
+  guarda `{"version": 1, "tema": "matrix"}` en `ajustes.json`; código 0.
+- `tareas tema --exportar papel --destino …` deja los tres ficheros y se
+  pueden leer con sus herramientas: el JSON de Windows Terminal tiene **20
+  claves** (`name`, `background`, `foreground`, `cursorColor` y los 16
+  colores), el `.itermcolors` se abre con `plistlib` y tiene **19 claves**, y
+  el script de GNOME lleva **6 `gsettings set`** y los **16 colores**; código 0.
+- `tareas tema --crear "con espacios" …`, un color que no es hex o `--crear`
+  sin los tres colores salen con **código 2** y explican qué falta, sin
+  traceback.
+- `tareas tema neon` sale con **código 1** y el mensaje nombra los temas que
+  hay, incluidos los propios.
+- `tareas tema --restablecer` manda `OSC 104`, `110`, `111` y `112` y deja el
+  tema guardado vacío, así que el menú ya no lo reaplica; código 0.
+- Con `TERM=dumb` (y sin `WT_SESSION`) avisa de que el terminal no admite
+  cambiar los colores, recuerda `--exportar` y **no guarda** el tema; código 0.
+- En el resto de terminales la detección se prueba con entornos simulados
+  (`WT_SESSION`, `TERM_PROGRAM`, `VTE_VERSION`, `KITTY_WINDOW_ID`, `TMUX` y
+  `TERM`), sin depender del equipo donde se ejecuten las pruebas.

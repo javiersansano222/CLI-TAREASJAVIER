@@ -797,3 +797,53 @@ no pasaba «de casualidad».
 **Resultado:** **68 tests en verde** (`uv run pytest -q`), versión 1.0.0 en
 `pyproject.toml` y `__init__.py`, `CHANGELOG.md` y README con la instalación
 en una orden (`@v1.0.0`) y la desinstalación.
+
+## 2026-11-15 · Temas de terminal (`tareas tema`)
+
+**Prompt de partida (plan):**
+
+> Quiero un comando que cambie los colores del propio terminal, más
+> personalizado que `cambio` y que pueda elegir entre varios. Primero
+> organízalo aquí y luego vamos.
+
+**Plan aprobado.** Se descartó editar el `settings.json` del terminal y se
+eligió: OSC para la sesión actual, exportar para que sea permanente, seis temas
+y uno propio, dejando `cambio` como estaba. La decisión queda en
+`docs/adr/0003-temas-de-terminal.md`.
+
+**Por qué el plan cambió a mitad.** El primer borrador iba a tocar la
+configuración de Windows Terminal; al mirar el alcance se vio que depende de la
+versión, de la ruta y del sistema, y que en Linux y macOS habría que repetir la
+faena con `gsettings` y plists. Se cambió a exportar ficheros y que el usuario
+los importe.
+
+**Qué se construyó, en orden:**
+
+1. `src/tareas/terminal.py`: seis paletas y funciones que **devuelven** el texto
+   de las secuencias (`aplicar`, `restablecer`, `secuencia_fondo`…), más
+   `detectar()` para saber si el terminal admite OSC.
+2. `tests/test_terminal.py`: 38 pruebas (16 colores por paleta, hex válido y
+   rechazado, formato exacto de cada OSC, detección con entornos simulados).
+3. `src/tareas/ajustes.py`: `ajustes.json` en `%APPDATA%\tareas` (Windows) o
+   `~/.config/tareas`; si está roto se empieza de cero.
+4. `src/tareas/exportar_tema.py`: JSON de Windows Terminal, plist de iTerm2 y
+   script de `gsettings`.
+5. `tareas tema` con `--ver`, `--crear`, `--exportar`, `--restablecer` y
+   `--sin-paleta`; el tema guardado se reaplica al abrir el menú.
+
+**Qué falló y cómo se arregló:**
+
+- El script de GNOME no compilaba: una línea de la plantilla se quedó sin
+  concatenar (`PALETA="…"` suelta dentro del `return`). Se reescribió como lista
+  de líneas.
+- El `.itermcolors` salía con la clave `Ansi 0 Color` duplicada y `plistlib` lo
+  rechazaba. Se quitó la clave suelta y la prueba ahora **parsea** el plist, así
+  que el fallo no puede volver.
+- La detección devolvía «consola clásica de Windows» antes de mirar `TERM`:
+  en Windows cualquier entorno caía ahí. Se movió ese caso al final, como
+  último recurso.
+- La columna de muestra se cortaba con dos bloques por color; con uno cabe.
+
+**Resultado:** **134 tests en verde y 1 saltado** (el de XDG, que no aplica en
+Windows), versión 1.1.0, README con los seis temas, límites por terminal e
+instrucciones de importación, y ADR-0003 con la decisión y las alternativas.

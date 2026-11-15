@@ -4,6 +4,29 @@ Todos los cambios que notará quien USA la herramienta. Formato:
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) · versiones:
 [SemVer](https://semver.org/lang/es/).
 
+## [1.1.0] - 2026-11-20
+
+### Añadido
+
+- `tareas tema`: cambia los colores de toda la terminal (fondo, texto, cursor y
+  los 16 colores ANSI), no solo el del menú. Seis temas: `medianoche`,
+  `matrix`, `papel`, `ambar`, `oceano` y `contraste`.
+- `tareas tema --ver <tema>`: vista previa sin aplicar ni guardar nada.
+- `tareas tema --crear <nombre> --fondo … --texto … --cursor …`: tema propio a
+  partir de los 16 colores de otro, con los colores en hexadecimal.
+- `tareas tema --exportar <tema>`: genera el esquema de Windows Terminal, el
+  `.itermcolors` de iTerm2 y un script de `gsettings` para GNOME Terminal, para
+  que el cambio dure aunque se cierre la terminal.
+- `tareas tema --restablecer`: vuelve a los colores originales y olvida el tema
+  guardado.
+- El tema elegido se recuerda en `ajustes.json` y se vuelve a aplicar al abrir
+  el menú. Si el terminal no admite cambiar los colores, se avisa y se explica
+  cómo exportarlo.
+
+### Cambiado
+
+- El README explica los temas, sus límites por terminal y cómo importarlos.
+
 ## [1.0.0] - 2026-11-19
 
 ### Añadido

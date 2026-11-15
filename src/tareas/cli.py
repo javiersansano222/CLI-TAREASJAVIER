@@ -2,21 +2,27 @@
 
 from datetime import datetime
 from pathlib import Path
+import re
+import sys
 from typing import Annotated, Any, NoReturn
 
 import typer
 from rich.console import Console
 from rich.markup import escape
+from rich.panel import Panel
 from rich.table import Table
 
 from tareas import __version__
+from tareas import ajustes as modulo_ajustes
 from tareas import capturas as modulo_capturas
 from tareas import config as configuracion
 from tareas import doctor as modulo_doctor
+from tareas import exportar_tema as modulo_exportar
 from tareas import ia as modulo_ia
 from tareas import imagenes as modulo_imagenes
 from tareas import informe as modulo_informe
 from tareas import temporales as modulo_temporales
+from tareas import terminal as modulo_terminal
 from tareas.acciones import Resultado
 from tareas.bienvenida import mostrar_bienvenida
 from tareas.chuleta import mostrar_chuleta
@@ -24,6 +30,7 @@ from tareas.errores import TareasError
 from tareas.sistema import mostrar_sistema
 from tareas.menu import cambiar_color, color_actual, menu_activo, menu_interactivo, _mostrar_cita_motivacional
 from tareas.motor import Motor
+from tareas.terminal import PALETAS, Paleta
 
 app = typer.Typer(
     help="tareas: automatiza tareas repetitivas con tus ficheros.",
@@ -221,6 +228,7 @@ def principal(
     """Configura la ruta de acciones.json para todas las órdenes."""
     ctx.obj = config
     if ctx.invoked_subcommand is None:
+        _aplicar_tema_guardado()
         menu_interactivo(app)
 
 
@@ -270,6 +278,249 @@ def cambio(
     consola.print(f"[{actual}]✔ Color del menú cambiado a {elegido}.[/{actual}]")
     if not menu_activo():
         menu_interactivo(app)
+
+
+def _escribir_secuencias(texto: str) -> None:
+    """Manda las secuencias tal cual: Rich las partiría al envolver renglones."""
+    sys.stdout.write(texto)
+    sys.stdout.flush()
+
+
+def _aplicar_tema_guardado() -> None:
+    """Al abrir el menú, recupera el tema elegido si el terminal lo admite."""
+    nombre = modulo_ajustes.tema_elegido()
+    if not nombre or not modulo_terminal.detectar().soportado:
+        return
+    try:
+        paleta = modulo_ajustes.buscar_tema(nombre)
+    except TareasError:
+        return
+    _escribir_secuencias(modulo_terminal.aplicar(paleta))
+
+
+def _muestra(paleta: Paleta) -> str:
+    """Muestra de la paleta: una ficha y los 16 colores en bloques."""
+    bloques = "".join(f"[{color}]█[/]" for color in paleta.ansi)
+    return f"[on {paleta.fondo}][{paleta.texto}] tareas [/][/] {bloques}"
+
+
+def _tabla_temas() -> None:
+    """Los temas disponibles, con el elegido marcado."""
+    actual = modulo_ajustes.tema_elegido()
+    todos = {**PALETAS, **modulo_ajustes.temas_propios()}
+
+    tabla = Table(title="Temas de terminal", header_style="bold")
+    tabla.add_column("Tema")
+    tabla.add_column("Descripción")
+    tabla.add_column("Muestra")
+    for clave in sorted(todos):
+        marca = "✔" if clave == actual else " "
+        tabla.add_row(f"{marca} {clave}", todos[clave].descripcion, _muestra(todos[clave]))
+    consola.print(tabla)
+    consola.print(
+        "[dim]Aplícalo con «tareas tema matrix»; vista previa sin tocar nada, "
+        "«tareas tema --ver matrix»; para otro terminal, "
+        "«tareas tema --exportar matrix».[/dim]"
+    )
+
+
+def _vista_previa(paleta: Paleta) -> None:
+    """Enseña cómo queda el tema sin aplicarlo ni guardarlo."""
+    consola.print(
+        Panel.fit(
+            f"[{paleta.texto}]Así se verán los mensajes sobre el fondo "
+            f"«{paleta.nombre}».[/]\n\n"
+            f"[{paleta.texto}]✔ hecho   ✘ error   ⚠ aviso   "
+            f"tareas version[/]\n\n"
+            f"{_muestra(paleta)}",
+            title=f"tareas tema {paleta.nombre}",
+            subtitle=paleta.descripcion,
+            style=f"on {paleta.fondo}",
+            border_style=paleta.cursor,
+        )
+    )
+    consola.print(
+        "[dim]Nada aplicado todavía: quita «--ver» para cambiar los colores "
+        "de esta sesión.[/dim]"
+    )
+
+
+def _nombre_de_tema(valor: str) -> str:
+    """Valida el nombre de un tema propio antes de guardarlo."""
+    clave = valor.strip().lower()
+    if not re.fullmatch(r"[a-z0-9][a-z0-9_-]{0,23}", clave):
+        raise typer.BadParameter(
+            "usa letras sin tilde, números, guion o guion bajo (máximo 24)",
+            param_hint="--crear",
+        )
+    return clave
+
+
+def _color_de_tema(valor: str, opcion: str) -> str:
+    """Valida un color hex y lo devuelve normalizado."""
+    try:
+        return modulo_terminal.normalizar_hex(valor)
+    except TareasError:
+        raise typer.BadParameter(
+            "escribe seis dígitos hex, por ejemplo #0b1020",
+            param_hint=opcion,
+        ) from None
+
+
+@app.command()
+def tema(
+    nombre: Annotated[
+        str | None,
+        typer.Argument(
+            help="Tema a aplicar: medianoche, matrix, papel, ambar, oceano, "
+            "contraste o uno creado por ti.",
+        ),
+    ] = None,
+    ver: Annotated[
+        str | None,
+        typer.Option("--ver", help="Vista previa de un tema, sin aplicarlo."),
+    ] = None,
+    restablecer: Annotated[
+        bool,
+        typer.Option("--restablecer", help="Devuelve los colores originales."),
+    ] = False,
+    exportar: Annotated[
+        str | None,
+        typer.Option(
+            "--exportar",
+            help="Genera los ficheros de Windows Terminal, iTerm2 y GNOME.",
+        ),
+    ] = None,
+    destino: Annotated[
+        Path | None,
+        typer.Option(
+            "--destino",
+            help="Carpeta de los ficheros exportados (por defecto, la actual).",
+        ),
+    ] = None,
+    crear: Annotated[
+        str | None,
+        typer.Option(
+            "--crear",
+            help="Guarda un tema propio con --fondo, --texto y --cursor.",
+        ),
+    ] = None,
+    desde: Annotated[
+        str,
+        typer.Option("--desde", help="Tema del que copiar los 16 colores."),
+    ] = "medianoche",
+    fondo: Annotated[
+        str | None,
+        typer.Option("--fondo", help="Color de fondo al crear: #0b1020."),
+    ] = None,
+    texto: Annotated[
+        str | None,
+        typer.Option("--texto", help="Color del texto al crear: #d7dcf5."),
+    ] = None,
+    cursor: Annotated[
+        str | None,
+        typer.Option("--cursor", help="Color del cursor al crear: #7aa2f7."),
+    ] = None,
+    sin_paleta: Annotated[
+        bool,
+        typer.Option(
+            "--sin-paleta",
+            help="Cambia solo fondo, texto y cursor, sin tocar los 16 colores.",
+        ),
+    ] = False,
+) -> None:
+    """Cambia los colores de la terminal: seis temas o uno propio."""
+    if restablecer:
+        _escribir_secuencias(modulo_terminal.restablecer())
+        modulo_ajustes.guardar_tema("")
+        consola.print("✔ Colores del terminal restablecidos.")
+        return
+
+    if crear:
+        clave = _nombre_de_tema(crear)
+        if not (fondo and texto and cursor):
+            raise typer.BadParameter(
+                "al crear un tema hacen falta --fondo, --texto y --cursor",
+                param_hint="--crear",
+            )
+        try:
+            base = modulo_ajustes.buscar_tema(desde)
+        except TareasError as error:
+            _mostrar_error(error)
+        propia = Paleta(
+            nombre=clave,
+            descripcion=f"tema propio sobre {base.nombre}",
+            fondo=_color_de_tema(fondo, "--fondo"),
+            texto=_color_de_tema(texto, "--texto"),
+            cursor=_color_de_tema(cursor, "--cursor"),
+            ansi=base.ansi,
+        )
+        ruta = modulo_ajustes.guardar_tema_propio(propia)
+        consola.print(
+            f"[{propia.cursor}]✔ Tema «{clave}» guardado en {ruta}.[/{propia.cursor}]"
+        )
+        consola.print(
+            f"[dim]Pruébalo con «tareas tema --ver {clave}» y aplícalo con "
+            f"«tareas tema {clave}».[/dim]"
+        )
+        return
+
+    if exportar:
+        try:
+            paleta = modulo_ajustes.buscar_tema(exportar)
+        except TareasError as error:
+            _mostrar_error(error)
+        carpeta = (destino or Path.cwd()).expanduser()
+        ficheros = modulo_exportar.guardar(paleta, carpeta)
+        tabla = Table(title=f"Tema «{paleta.nombre}» exportado", header_style="bold")
+        tabla.add_column("Fichero")
+        tabla.add_column("Tamaño", justify="right")
+        for fichero in ficheros:
+            tabla.add_row(str(fichero), tamano_legible(fichero.stat().st_size))
+        consola.print(tabla)
+        consola.print(
+            "[dim]Windows Terminal: Configuración → Abrir JSON y pega el objeto "
+            "en «schemes».\n"
+            "iTerm2: Preferencias → Profiles → Colors → Color Presets → Import.\n"
+            "GNOME Terminal o Tilix: ejecuta el script .sh una vez.[/dim]"
+        )
+        return
+
+    if ver:
+        try:
+            paleta = modulo_ajustes.buscar_tema(ver)
+        except TareasError as error:
+            _mostrar_error(error)
+        _vista_previa(paleta)
+        return
+
+    if nombre is None:
+        _tabla_temas()
+        return
+
+    try:
+        paleta = modulo_ajustes.buscar_tema(nombre)
+    except TareasError as error:
+        _mostrar_error(error)
+
+    soporte = modulo_terminal.detectar()
+    if not soporte.soportado:
+        consola.print(
+            f"[yellow]⚠ Este terminal ({soporte.terminal}) no admite cambiar "
+            f"los colores de la sesión.[/yellow]"
+        )
+        if soporte.nota:
+            consola.print(f"[dim]{escape(soporte.nota)}[/dim]")
+        consola.print(
+            f"[dim]Para dejarlo puesto de forma permanente: "
+            f"«tareas tema --exportar {paleta.nombre}».[/dim]"
+        )
+        return
+
+    _escribir_secuencias(modulo_terminal.aplicar(paleta, con_paleta=not sin_paleta))
+    modulo_ajustes.guardar_tema(paleta.nombre)
+    consola.print(f"✔ Tema «{paleta.nombre}» aplicado a esta sesión.")
+    consola.print("[dim]Se recordará al abrir el menú de «tareas».[/dim]")
 
 
 @app.command()

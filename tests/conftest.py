@@ -25,6 +25,10 @@ def aislado(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     monkeypatch.setenv("HOME", str(tmp_path))  # ~ apunta aquí (Linux, macOS)
     monkeypatch.setenv("USERPROFILE", str(tmp_path))  # y aquí en Windows
+    # Los ajustes del usuario (temas) tampoco se escriben en la carpeta real.
+    monkeypatch.setenv("APPDATA", str(tmp_path / "AppData"))
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "config"))
+    monkeypatch.delenv("TAREAS_CONFIG", raising=False)
     for variable in ("CENTRO_IA_URL", "CENTRO_IA_KEY", "CENTRO_IA_CA"):
         monkeypatch.delenv(variable, raising=False)
     # Ni un .env despistado por la carpeta del repo puede colar una clave.

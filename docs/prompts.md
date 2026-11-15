@@ -658,3 +658,125 @@ de pasar un contexto TLS en la versión documentada.»
   compensará pasar a `httpx.Client(verify=ctx)` compartido, que es lo que
   recomienda la doc actual. Queda anotado como mejora futura, no urgente.
 - Tras usarlo, se vuelve a `"disabled": true` en `opencode.json`.
+
+---
+
+## 2026-11-15 · Sesión 4: pruebas, Actions y release 1.0.0
+
+**Prompts clave (agente plan y agente build):**
+
+> Carga la skill acciones-json y lee @src/tareas/config.py, @src/tareas/motor.py,
+> @src/tareas/acciones.py y @src/tareas/ia.py. Quiero pruebas con pytest. Antes
+> de escribir nada, dime qué fixtures pondrías en tests/conftest.py para que
+> NINGUNA prueba toque mis carpetas de verdad ni llame al servidor de IA, qué
+> casos feos probarías y qué códigos de salida probarías con CliRunner.
+
+> Ahora tests/test_config.py y tests/test_acciones.py. Cada prueba, un nombre
+> que diga qué comprueba. Casos feos con @pytest.mark.parametrize e ids
+> legibles. Ni una ruta real: todo en tmp_path. No cambies src/. Si una prueba
+> falla, NO la «arregles»: dime por qué falla.
+
+> Ahora tests/test_ia.py, sin red y sin gastar un token: a_nombre_seguro con
+> parametrize, Resumir con modelo_falso, --simular que no pregunta, categoría
+> desconocida, sin clave y sin red.
+
+> Ahora tests/test_cli.py con typer.testing.CliRunner: una prueba por código de
+> salida (0 ayuda, 1 acción inexistente, 2 opción inexistente, 3 JSON roto sin
+> traza, 4 IA sin clave y el aviso «siguen funcionando»).
+
+**Caja de arena.** `tests/conftest.py` tiene una fixture `aislado` con
+`autouse=True`: `monkeypatch.chdir(tmp_path)`, `HOME` y `USERPROFILE` a la
+carpeta temporal, fuera `CENTRO_IA_URL`, `CENTRO_IA_KEY` y `CENTRO_IA_CA`, y
+`cargar_dotenv` anulado para que ningún `.env` despistado cuele una clave.
+Además: `descargas` (5 ficheros feos, `viejo.tmp` con 40 días por `os.utime`),
+`escribir_config` y `ProveedorFalso` (hereda de `ProveedorIA` y apunta cada
+pregunta). Los tests que cargaban `acciones.json` relativo se pasaron a ruta
+absoluta del repo, en solo lectura.
+
+**La prueba que prueba (mutación).** Saqué `carpeta.mkdir(...)` del
+`if not simular:` en `Mover.aplicar` y ejecuté la suite:
+
+```
+>       assert not destino.exists()  # ni siquiera un mkdir
+E       AssertionError: assert not True
+FAILED tests/test_acciones.py::test_simular_no_toca_el_disco
+1 failed, 67 passed
+```
+
+Después restauré el código. Esa prueba sí protege el «no tocar nada» que
+promete `--simular`.
+
+**El fallo que cazó una prueba (bug real).** El caso `con-extension` de
+`a_nombre_seguro` se puso en rojo sin romper nada a propósito:
+
+```
+respuesta = 'redes-ip-protocolos.pdf', esperado = 'redes-ip-protocolos'
+E       AssertionError: assert 'redes-ip-protocolos.pdf' == 'redes-ip-protocolos'
+```
+
+La prueba tenía razón: `renombrar-ia` habría producido
+`redes-ip-protocolos.pdf.pdf`. El arreglo fue una línea en
+`src/tareas/acciones.py` (quitar la extensión de 1-5 caracteres que añade el
+modelo antes de volver a poner la del fichero original). La prueba se queda
+vigilando.
+
+**Categoría desconocida.** Se mantiene el comportamiento del proyecto: si el
+modelo contesta algo que no está en `categorias`, el fichero se queda donde
+está y el resultado es `saltado` («no es una categoría conocida»). No se
+inventan carpetas. La prueba comprueba las tres cosas: estado, motivo y que
+`Asig/` no existe.
+
+**CLI desde fuera.** `tests/test_cli.py` ya no usa `subprocess` ni `uv run`
+anidado: `CliRunner` invoca la app en el mismo proceso. Una prueba por código:
+0 (`--help` y `validar`), 1 (acción inexistente), 2 (opción inexistente), 3
+(JSON roto, sin `Traceback`) y 4 (IA sin clave, con «siguen funcionando»). Los
+errores van por `stderr` (Rich `Console(stderr=True)`), así que el helper
+`salida()` junta stdout y stderr.
+
+**GitHub Actions.** `.github/workflows/pruebas.yml`: `push` y
+`pull_request`, matriz `ubuntu-latest`, `windows-latest` y `macos-latest` con
+`fail-fast: false`, `actions/checkout@v5`, `astral-sh/setup-uv@v6` con Python
+3.12 y `uv run pytest -v`.
+
+**`scripts/revisar.sh` con `opencode run`.** El script comprueba que hay algo
+preparado, manda `git diff --staged` por la entrada estándar al agente
+`revisor`, limita la espera con `timeout 180` y convierte el veredicto en
+código de salida. Probado en un repo temporal con un `os.system` metido a
+propósito: el revisor arrancó, se le denegó una orden de shell (correcto: es
+de solo lectura) y el script salió con 1 al no encontrar `VEREDICTO: OK`. El
+modelo gratuito del entorno (`big-pickle`) agotó su cuota antes de dar el
+veredicto: la revisión completa hay que repetirla con la clave del centro
+(`opencode run --agent revisor`), pero el script, los permisos y el tiempo
+máximo quedan probados.
+
+**El borrador del CHANGELOG.** El intento con `opencode run --agent plan` no
+llegó a completarse por el mismo límite de cuota, así que el `CHANGELOG.md` se
+escribió a mano repasando `git log`. Se aplicaron las correcciones típicas del
+borrador del agente: fuera lo interno de OpenCode (la plantilla
+`/nueva-accion` no le sirve a quien usa la CLI), fuera el bloque ```` ```markdown ````
+con «Notas rápidas» al final, y no se afirmó nada que el código no haga (por
+ejemplo, aquí `a_nombre_seguro` sí conserva tildes, pero el CHANGELOG no
+menciona eso porque no es un cambio de la 1.0.0).
+
+**Auditoría de los asserts (para la defensa).**
+
+- `assert not destino.exists()` en `test_simular_no_toca_el_disco`: si alguien
+  saca el `mkdir` del `if not simular`, se pone en rojo.
+- `assert vieja.read_text(...) == "la que ya estaba"`: mover nunca pisa un
+  fichero que ya existe; el nuevo va a `factura (1).pdf`.
+- `assert error.value.campo == campo`: el mensaje de config señala el campo
+  exacto que falla (tipo, destino, descripcion, filtro.patron).
+- `assert a_nombre_seguro("../../etc/passwd") == "etc passwd"`: una respuesta
+  del modelo no puede escapar de la carpeta.
+- `assert falso.preguntas == []` en `test_simular_no_pregunta_al_modelo`:
+  `--simular` no gasta ni una llamada.
+- `assert resultado.estado == "saltado"` en la categoría rara: no se inventan
+  carpetas y el fichero sigue en su sitio.
+- `assert resultado.exit_code == 3` y `"Traceback" not in salida(...)`: un
+  JSON roto es un error previsible, no un fallo del programa.
+- `assert "siguen funcionando" in salida(...)`: sin IA, la CLI lo explica y
+  las demás acciones no se ven afectadas.
+
+**Resultado:** **68 tests en verde** (`uv run pytest -q`), versión 1.0.0 en
+`pyproject.toml` y `__init__.py`, `CHANGELOG.md` y README con la instalación
+en una orden (`@v1.0.0`) y la desinstalación.

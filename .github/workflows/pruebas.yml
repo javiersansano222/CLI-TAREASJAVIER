@@ -1,0 +1,26 @@
+# .github/workflows/pruebas.yml
+name: Pruebas
+
+# En cada push y en cada pull_request: si algo se rompe, se ve antes de la entrega.
+on:
+  push:
+  pull_request:
+
+jobs:
+  pruebas:
+    strategy:
+      # Si un sistema falla, los otros dos siguen: así se ven los tres resultados.
+      fail-fast: false
+      matrix:
+        # El mismo trabajo, tres veces, en las tres máquinas que presta GitHub.
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      # Trae el repositorio a la máquina.
+      - uses: actions/checkout@v5
+      # Instala uv y Python 3.12 desde cero, como en un equipo nuevo.
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      # Lo mismo que en mi terminal: si alguna prueba falla, la máquina se pone roja.
+      - run: uv run pytest -v

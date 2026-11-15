@@ -86,20 +86,21 @@ instaladores oficiales.
 
 ### Solo para usar la terminal
 
-Si no vas a modificar el código, instala la versión publicada desde GitHub
-con **una orden**:
+Si no vas a modificar el código, instala la última versión de `main` desde
+GitHub con **una orden**:
 
 ```bash
 uv python install 3.12
-uv tool install git+https://github.com/javiersansano222/CLI-TAREASJAVIER@v1.1.0
+uv tool install git+https://github.com/javiersansano222/CLI-TAREASJAVIER
 uv tool update-shell   # si «tareas» no aparece en el PATH
 # cierra y abre una terminal nueva
 tareas --help
 tareas version         # debe decir: tareas 1.1.0
 ```
 
-La etiqueta `@v1.1.0` congela la versión: siempre instala exactamente esa.
-Para la última de `main`, quita `@v1.1.0`.
+Sin etiqueta se instala siempre lo último de `main`. Si quieres congelar una
+versión concreta, añade su etiqueta: `@v1.0.0` sigue disponible y así siempre
+instala exactamente esa.
 
 ### Primeros pasos
 

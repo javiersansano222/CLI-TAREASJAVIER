@@ -720,12 +720,83 @@ Comprobado en `~/pruebas-tareas/semana3/capturas`:
 - Ruta inexistente o fichero: código 1 sin traceback.
 - `--top 0` o `--horas 0`: error de uso con código 2.
 
+## Estado de la orden temporales
+
+Comprobado en `~/pruebas-tareas/estado-semana/temporales` con 8 ficheros de
+prueba (todos de 40 días salvo uno):
+
+- `--simular` enseña los 5 que cumplen y no envía nada a la papelera:
+  `.DS_Store`, `Thumbs.db`, `respaldo.txt~`, `~$informe.docx` y `viejo.tmp`.
+  Código 0.
+- Se quedan fuera `reciente.tmp` (modificado hoy), `notas.txt` (no es un
+  fichero temporal) y `sub/viejo.tmp` (está en una subcarpeta).
+- Sin `--si` pregunta «¿Enviar 5 ficheros temporales a la papelera?»; si se
+  responde que no, no toca nada y sale con **código 1**.
+- `--dias 10` selecciona los mismos 5, porque todos pasan de 40 días.
+  `--dias 0` o negativo es error de uso: «debe ser 1 o más», **código 2**.
+- Carpeta inexistente o que en realidad es un fichero: mensaje humano,
+  **código 1**, sin traceback.
+- Carpeta vacía: «No hay ficheros temporales con al menos 30 días…»,
+  **código 0**.
+- Usa `send2trash`, la papelera del sistema: nada se borra de forma
+  definitiva y se puede recuperar.
+
+## Estado de comprimir imágenes
+
+Comprobado en `~/pruebas-tareas/estado-semana/imagenes` (4 imágenes
+compatibles, un GIF animado y un `.txt`) y en `estado-semana/animadas` (una
+WebP animada y un PNG con contenido JPEG dentro):
+
+- `--simular` lista las 4 imágenes (`.jpg` y `.png`) con su destino y estado
+  «simulado», y no crea la carpeta `comprimidas` ni escribe un solo fichero.
+  En la simulación la columna Final sale «—»: no abre las imágenes, así que
+  tampoco promete un ahorro que luego no se cumpla. Código 0.
+- Compresión real con la calidad por defecto (75): `foto.jpg` pasa de
+  624.6 KB a 265.7 KB (57 % menos) y `logo.png` de 591 B a 470 B.
+  `dibujo.png` y `pixel.png` salen **saltadas** («no reduce el tamaño») y no
+  dejan copia en el destino.
+- `--webp` convierte las 4: `dibujo.png` de 1.5 MB a 330.8 KB (79 % menos) y
+  `pixel.png` de 69 B a 44 B. Las copias se guardan como `.webp` en
+  `comprimidas`.
+- Los originales quedan intactos después de las dos órdenes: mismo tamaño y
+  misma fecha de modificación (comprobado antes y después).
+- El GIF animado y `nota.txt` no aparecen en la tabla. Una `.webp` animada o un
+  `.png` que en realidad contiene un JPEG sí se listan, pero al comprimir
+  acaban en **error** con su motivo («es animada; se omite», «no coincide con
+  su extensión (contiene JPEG)»), no dejan copia y la orden sale con
+  **código 1**.
+- `--calidad 0` o mayor de 95 es error de uso con **código 2**; carpeta
+  inexistente, **código 1**; carpeta sin imágenes compatibles, «No hay
+  imágenes compatibles…» y **código 0**.
+
 ## Estado de `tareas doctor`
 
 - Tabla ✔/⚠/✘ de config, dependencias, descargas, orígenes, IA y `~/pruebas-tareas`.
 - Sin tocar disco: solo lectura; ninguna creación, borrado ni escritura.
 - JSON roto con `--config` → ✘ con el motivo exacto (línea y columna) y código 3.
 - Config válida con avisos → resumen amarillo y código 0.
+
+## Estado de la semana 3
+
+La semana 3 fue la capa de IA de acciones. El diseño, las pruebas sin red y
+todo lo comprobado están en [Estado de la capa IA](#estado-de-la-capa-ia), y
+la decisión del proveedor inyectable y del código 4, en
+`docs/adr/0002-ia-interfaz-y-salida-4.md`. Resumen:
+
+- Tres acciones con IA (`resumir-apuntes`, `renombrar-apuntes` y
+  `clasificar-apuntes`) que se activan desde `acciones.json`; las otras 5
+  siguen funcionando sin red.
+- `ProveedorIA` como interfaz: `ProveedorCentro` (httpx) en el equipo y un
+  proveedor falso en las pruebas, así la suite no gasta ni un token.
+- Sin clave o sin red: **código 4**, mensaje humano y ningún fichero tocado.
+- `--simular` calcula caracteres y tokens por fichero sin preguntar al modelo.
+- 21 pruebas de esta capa sin red ni claves (`tests/test_ia.py`), dentro de
+  los 68 de la semana 4.
+- Pendiente: probar las tres acciones contra el servidor real del centro
+  desde la red del instituto.
+
+Las órdenes de ficheros de estas semanas (`capturas`, `temporales`, `informe`,
+`doctor` e `imagenes`) tienen su estado comprobado en las secciones anteriores.
 
 ## Estado de la capa IA
 

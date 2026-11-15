@@ -731,7 +731,7 @@ anidado: `CliRunner` invoca la app en el mismo proceso. Una prueba por código:
 0 (`--help` y `validar`), 1 (acción inexistente), 2 (opción inexistente), 3
 (JSON roto, sin `Traceback`) y 4 (IA sin clave, con «siguen funcionando»). Los
 errores van por `stderr` (Rich `Console(stderr=True)`), así que el helper
-`salida()` junta stdout y stderr.
+`salida()` junta stdout y stderr y quita los colores antes de comparar.
 
 **GitHub Actions.** `.github/workflows/pruebas.yml`: `push` y
 `pull_request`, matriz `ubuntu-latest`, `windows-latest` y `macos-latest` con
@@ -776,6 +776,23 @@ menciona eso porque no es un cambio de la 1.0.0).
   JSON roto es un error previsible, no un fallo del programa.
 - `assert "siguen funcionando" in salida(...)`: sin IA, la CLI lo explica y
   las demás acciones no se ven afectadas.
+
+**El primer rojo lo puso el CI, no mi portátil.** En GitHub Actions las 68
+pruebas pasaron menos una: `test_opcion_que_no_existe_sale_con_2`, y en los
+tres sistemas a la vez. El log del job de Ubuntu lo dejaba claro:
+
+```
+E       assert '--inventada' in "No such option: \x1b[1;36m-\x1b[0m\x1b[1;36m-inventada\x1b[0m"
+```
+
+Click solo colorea cuando la salida es una terminal, y en Actions lo es: el
+`--inventada` llega partido en dos trozos por los códigos ANSI (`-` por un lado
+y `-inventada` por otro), así que la cadena no aparece entera. En mi terminal
+`CliRunner` escribía sin color y la prueba pasaba. Arreglo: `salida()` limpia
+las secuencias ANSI con `re.sub(r"\x1b\[[0-9;]*m", "", texto)` y la prueba se
+lanza con `env={"FORCE_COLOR": "1"}` para reproducir el caso de Actions también
+en local. Comprobado que sin la limpieza el assert vuelve a fallar: la prueba
+no pasaba «de casualidad».
 
 **Resultado:** **68 tests en verde** (`uv run pytest -q`), versión 1.0.0 en
 `pyproject.toml` y `__init__.py`, `CHANGELOG.md` y README con la instalación

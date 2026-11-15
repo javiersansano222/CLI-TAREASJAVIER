@@ -11,7 +11,7 @@ Mi herramienta de línea de órdenes para automatizar tareas repetitivas con fic
 5. **Mis acciones:** limpiar temporales de más de 30 días, mover imágenes a `~/Imágenes/Fotos`, renombrar capturas por fecha y copiar instaladores `.exe`/`.deb` a una carpeta de respaldo.
 6. **Nunca hará:** borrar sin pedir confirmación (salvo `--si`) ni tocar ficheros fuera del origen y destino configurados.
 7. **Plataformas:** Linux primero; también Windows y macOS.
-8. **Códigos de salida:** 0 bien · 1 fallo al ejecutar · 2 uso incorrecto · 3 configuración inválida.
+8. **Códigos de salida:** 0 bien · 1 fallo al ejecutar · 2 uso incorrecto · 3 configuración inválida · 4 IA no disponible (las demás órdenes siguen).
 9. **Seguridad:** toda acción, `capturas`, `temporales` e `imagenes` se pueden simular con `--simular`; nunca se sobrescribe un fichero ni un enlace existente y las imágenes siempre se guardan como copias.
 10. **Instalación:** un solo comando con `instalar.ps1` (Windows) o `instalar.sh` (macOS/Linux); para desarrollar, `uv tool install --editable .`.
 
@@ -86,16 +86,42 @@ instaladores oficiales.
 
 ### Solo para usar la terminal
 
-Si no vas a modificar el código, instala directamente desde GitHub:
+Si no vas a modificar el código, instala la versión publicada desde GitHub
+con **una orden**:
 
 ```bash
 uv python install 3.12
-uv tool install git+https://github.com/javiersansano222/CLI-TAREASJAVIER --force
+uv tool install git+https://github.com/javiersansano222/CLI-TAREASJAVIER@v1.0.0
 uv tool update-shell   # si «tareas» no aparece en el PATH
 # cierra y abre una terminal nueva
 tareas --help
-tareas sistema
-hola
+tareas version         # debe decir: tareas 1.0.0
+```
+
+La etiqueta `@v1.0.0` congela la versión: siempre instala exactamente esa.
+Para la última de `main`, quita `@v1.0.0`.
+
+### Primeros pasos
+
+1. Copia `acciones.json` de este repo en tu carpeta de inicio (`acciones-win.json`
+   si estás en Windows, `acciones-mac.json` en macOS) y cambia las rutas por
+   las tuyas.
+2. Comprueba que está bien escrito: `tareas validar`.
+3. Mira qué haría, sin tocar nada: `tareas ejecutar ordenar-descargas --simular`.
+4. Cuando te convenza, repite la orden sin `--simular`.
+
+### IA (opcional)
+
+Las acciones `resumir`, `renombrar-ia` y `clasificar` usan los modelos del
+centro. Copia `.env.example` como `.env`, rellena `CENTRO_IA_URL` y
+`CENTRO_IA_KEY`, y comprueba la conexión con `tareas comprobar-ia`. Sin clave
+o sin red, la CLI sale con **código 4** y avisa de que las acciones sin IA
+siguen funcionando igual.
+
+### Desinstalar
+
+```bash
+uv tool uninstall tareas
 ```
 
 ### Para desarrollar y probar cambios
@@ -574,7 +600,7 @@ cli-tareas/
 │   └── adr/
 │       ├── 0001-configuracion-externa.md
 │       └── 0002-ia-interfaz-y-salida-4.md
-├── tests/                     Suite con pytest (45 en verde)
+├── tests/                     Suite con pytest (68 en verde)
 └── src/
     └── tareas/
         ├── __init__.py        Versión y salida en UTF-8
@@ -725,10 +751,6 @@ Comprobado en modo aislado, sin red del centro:
   `ejecutar` sin IA) siguen saliendo **0** con el entorno vacío.
 - `tareas acciones` enseña la columna **IA** y el pie «las N restantes
   funcionan sin red».
-- `tests/test_ia.py`: 12 tests con `httpx.post` parcheado (sin red).
-  `tests/test_acciones.py`: limpia de `a_nombre_seguro`, categorías con
-  tildes y simulación que no mueve nada. Suite completa: **45 tests en
-  verde** con `uv run pytest tests -q`, sin fallos en Windows.
 - Salida en UTF-8 desde el arranque (`src/tareas/__init__.py`): en Windows
   la salida va en cp1252 y el `✔` de `validar` o el banner de `hola`
   reventaban con `UnicodeEncodeError` (sobre todo con la salida redirigida
@@ -739,6 +761,37 @@ Comprobado en modo aislado, sin red del centro:
   de ejemplo), `Resúmenes` y `Clasificados`: con `--simular`, las tres
   acciones de IA encuentran los 2 apuntes y salen 0.
 
-`uv.lock` ya incluye `httpx`, `python-dotenv` y `pypdf`. Pendiente hasta la
-semana 4: probar las tres acciones contra el servidor real del centro desde la
-red del instituto.
+`uv.lock` ya incluye `httpx`, `python-dotenv` y `pypdf`. Queda pendiente
+probar las tres acciones contra el servidor real del centro desde la red del
+instituto.
+
+## Estado de la semana 4
+
+Pruebas automáticas y release 1.0.0:
+
+- **68 tests en verde** con `uv run pytest -q`, todos en carpetas temporales
+  y sin red.
+  - `tests/conftest.py`: fixture `aislado` (autouse) con `tmp_path`, `HOME`,
+    `USERPROFILE` y sin las variables del centro; `descargas` con ficheros
+    feos, `escribir_config` y `ProveedorFalso`.
+  - `tests/test_config.py` (12): `parametrize` con tipo inexistente, destino
+    vacío, sin descripción y regex rota; nombre repetido y JSON roto.
+  - `tests/test_acciones.py` (23): mover, `--simular` que no crea ni la
+    carpeta, nunca sobrescribir, `.JPG` en mayúsculas, borrar solo lo viejo y
+    renombrar con plantilla.
+  - `tests/test_ia.py` (21): `a_nombre_seguro` (tildes, ruta peligrosa,
+    extensión duplicada y respuesta vacía), resumen y clasificación con
+    `ProveedorFalso`, sin clave y sin red.
+  - `tests/test_cli.py` (7): `CliRunner` con los códigos de salida 0, 1, 2,
+    3 y 4.
+- Mutación comprobada: sacar el `mkdir` de `Mover` fuera del
+  `if not simular` pone en rojo `test_simular_no_toca_el_disco`
+  (1 failed, 67 passed); después se restauró el código.
+- GitHub Actions (`.github/workflows/pruebas.yml`): `uv run pytest -v` en
+  Ubuntu, Windows y macOS en cada push y pull request.
+- Versión **1.0.0** en `pyproject.toml` y `src/tareas/__init__.py`,
+  `CHANGELOG.md` para quien usa la herramienta y README con la instalación
+  en una orden y la desinstalación.
+- `scripts/revisar.sh`: el diff preparado se revisa con
+  `opencode run --agent revisor`, con `timeout 180` y veredicto convertido en
+  código de salida (0 si OK, 1 si hay que cambiar).

@@ -6,11 +6,12 @@ import pytest
 
 from tareas.config import cargar, ConfigError, AccionNoValida
 
+RAIZ = Path(__file__).resolve().parents[1]
+
 
 def test_cargar_acciones_validas():
-    """Test que carga y valida acciones.json correcto."""
-    ruta = Path("acciones.json")
-    acciones = cargar(ruta)
+    """El acciones.json del repo (solo lectura) se carga y valida."""
+    acciones = cargar(RAIZ / "acciones.json")
     assert len(acciones) >= 5  # crece con cada acción nueva del proyecto
 
 
@@ -60,3 +61,46 @@ def test_accion_repetida_nombre(tmp_path: Path):
     with pytest.raises(AccionNoValida) as exc:
         cargar(ruta)
     assert "repetido" in str(exc.value).lower()
+
+
+BUENA = {
+    "nombre": "ordenar",
+    "descripcion": "Mueve los PDF",
+    "tipo": "mover",
+    "destino": "~/PDF",
+}
+
+
+def test_una_config_buena_se_carga(escribir_config):
+    """Camino feliz: una acción bien escrita se valida y se devuelve tal cual."""
+    acciones = cargar(escribir_config([BUENA]))
+    assert [accion["nombre"] for accion in acciones] == ["ordenar"]
+
+
+@pytest.mark.parametrize(
+    "cambio, campo",
+    [
+        ({"tipo": "mober"}, "tipo"),
+        ({"destino": ""}, "destino"),
+        ({"descripcion": None}, "descripcion"),
+        ({"filtro": {"patron": "*.tmp"}}, "filtro.patron"),
+    ],
+    ids=["tipo-inexistente", "destino-vacio", "sin-descripcion", "regex-rota"],
+)
+def test_el_error_dice_que_campo_falla(escribir_config, cambio, campo):
+    """Cuatro casos feos: el mensaje siempre señala el campo que está mal."""
+    with pytest.raises(AccionNoValida) as error:
+        cargar(escribir_config([BUENA | cambio]))
+    assert error.value.campo == campo
+
+
+def test_nombre_repetido(escribir_config):
+    """Dos acciones con el mismo nombre: error claro antes de tocar el disco."""
+    with pytest.raises(AccionNoValida, match="está repetido"):
+        cargar(escribir_config([BUENA, BUENA]))
+
+
+def test_json_roto_dice_la_linea(escribir_config):
+    """Un JSON roto dice la línea y no enseña un traceback."""
+    with pytest.raises(ConfigError, match="línea 1"):
+        cargar(escribir_config('{"version": 1, "acciones": [ } ]'))

@@ -18,6 +18,12 @@ from tareas.acciones import (
     Resumir,
     leer_texto,
 )
+from tareas.motor import Motor
+
+
+def motor_con(**accion) -> Motor:
+    """Un motor con una única acción de prueba, montada al vuelo."""
+    return Motor([{"nombre": "prueba", "descripcion": "acción de prueba", **accion}])
 
 
 def test_mirar_espacio_tipo():
@@ -162,25 +168,73 @@ def test_clasificar_y_renombrar_necesitan_ia():
     assert RenombrarIA.necesita_ia is True
 
 
-def test_clasificar_simulacion_no_mueve(tmp_path):
-    """La simulación cuenta tokens y no crea ni mueve nada."""
-    origen = tmp_path / "origen"
-    destino = tmp_path / "destino"
-    origen.mkdir()
-    (origen / "apunte.txt").write_text("contenido del apunte", encoding="utf-8")
-    accion = Classificar(
-        {
-            "nombre": "clasificar-apuntes",
-            "descripcion": "prueba",
-            "tipo": "clasificar",
-            "origen": str(origen),
-            "destino": str(destino),
-            "categorias": ["programacion"],
-            "instrucciones": "elige",
-            "max_caracteres": 8000,
-        }
+def test_mover_solo_lo_que_cumple_el_filtro(descargas, tmp_path):
+    """Mueve los .pdf y .docx y deja el resto donde estaba."""
+    destino = tmp_path / "PDF"
+    motor = motor_con(
+        tipo="mover",
+        filtro={"extensiones": [".pdf", ".docx"]},
+        destino=str(destino),
     )
-    resultados = accion.ejecutar([origen / "apunte.txt"], simular=True)
-    assert resultados[0].estado == "simulado"
-    assert "sin gastar" in resultados[0].detalle
-    assert not destino.exists()
+    resultados = motor.ejecutar("prueba", descargas, simular=False)
+    assert sorted(f.name for f in destino.iterdir()) == [
+        "apuntes de redes.docx",
+        "factura.pdf",
+    ]
+    assert [resultado.estado for resultado in resultados] == ["hecho", "hecho"]
+    assert (descargas / "FOTO1.JPG").exists()
+
+
+def test_simular_no_toca_el_disco(descargas, tmp_path):
+    """--simular no mueve nada... y tampoco crea la carpeta de destino."""
+    destino = tmp_path / "PDF"
+    antes = sorted(descargas.iterdir())
+    motor = motor_con(
+        tipo="mover", filtro={"extensiones": [".pdf"]}, destino=str(destino)
+    )
+    motor.ejecutar("prueba", descargas, simular=True)
+    assert sorted(descargas.iterdir()) == antes
+    assert not destino.exists()  # ni siquiera un mkdir
+
+
+def test_nunca_sobrescribe(descargas, tmp_path):
+    """Si el destino existe, el fichero nuevo va con « (1)» y el viejo no se toca."""
+    destino = tmp_path / "PDF"
+    destino.mkdir()
+    (destino / "factura.pdf").write_text("la que ya estaba", encoding="utf-8")
+    motor_con(
+        tipo="mover", filtro={"extensiones": [".pdf"]}, destino=str(destino)
+    ).ejecutar("prueba", descargas, False)
+    vieja, nueva = destino / "factura.pdf", destino / "factura (1).pdf"
+    assert vieja.read_text(encoding="utf-8") == "la que ya estaba"
+    assert nueva.exists()
+
+
+def test_la_extension_en_mayusculas_cuenta(descargas):
+    """FOTO1.JPG entra en el filtro de .jpg: la extensión se compara en minúsculas."""
+    elegidos = Motor.seleccionar(descargas, {"extensiones": [".jpg"]})
+    assert [fichero.name for fichero in elegidos] == ["FOTO1.JPG"]
+
+
+def test_borrar_solo_los_viejos(descargas):
+    """Borra el .tmp de hace 40 días y respeta el .tmp recién creado."""
+    (descargas / "nuevo.tmp").write_text("", encoding="utf-8")
+    filtro = {"patron": r"\.tmp$", "mas_antiguo_que_dias": 30}
+    motor_con(tipo="borrar", filtro=filtro).ejecutar(
+        "prueba", descargas, simular=False
+    )
+    assert not (descargas / "viejo.tmp").exists()
+    assert (descargas / "nuevo.tmp").exists()
+
+
+def test_renombrar_con_plantilla(descargas):
+    """La plantilla numera en el orden de selección de la carpeta."""
+    motor = motor_con(
+        tipo="renombrar",
+        filtro={"extensiones": [".jpg", ".png"]},
+        plantilla="foto-{n:03}{ext}",
+    )
+    motor.ejecutar("prueba", descargas, simular=False)
+    # Orden de selección: «cumpleaños 2.png» (n=1) y «FOTO1.JPG» (n=2).
+    assert (descargas / "foto-001.png").exists()
+    assert (descargas / "foto-002.jpg").exists()

@@ -121,6 +121,9 @@ def a_nombre_seguro(texto: str, tope: int = 60) -> str:
         for caracter in nombre
     )
     nombre = " ".join(nombre.split())[:tope].strip(" .")
+    # Si el modelo añade una extensión («redes-ip-protocolos.pdf»), fuera:
+    # la acción conserva la del fichero original y no queremos «.pdf.pdf».
+    nombre = re.sub(r"\.[A-Za-z0-9]{1,5}$", "", nombre).strip(" .")
     if not nombre or nombre in {".", ".."}:
         return ""
     base = nombre.split(".", maxsplit=1)[0].upper()

@@ -13,12 +13,14 @@ from tareas.ia import (
     ErrorRedIA,
     FaltaClaveIA,
     IANoDisponible,
+    ProveedorCentro,
     hablar,
     explicar_simulacion,
     sugerir_accion,
     _extraer_json,
 )
-from tareas.acciones import Resultado
+from tareas.acciones import Resultado, a_nombre_seguro
+from tareas.motor import Motor
 
 
 @pytest.fixture
@@ -160,3 +162,96 @@ def test_explicar_simulacion_recorta(con_clave, monkeypatch):
     assert texto == "explicación"
     assert "captura_0.png" in capturado["payload"]["messages"][-1]["content"]
     assert "15 ficheros más" in capturado["payload"]["messages"][-1]["content"]
+
+
+# ---------------------------------------------------------------------------
+# Las acciones con IA, con un proveedor falso: sin red, sin clave y sin tokens
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "respuesta, esperado",
+    [
+        ("Tema 3: ¡Linux & Bash!", "Tema 3 ¡Linux & Bash!"),
+        ("../../etc/passwd", "etc passwd"),
+        ("redes-ip-protocolos.pdf", "redes-ip-protocolos"),
+        ("", ""),
+    ],
+    ids=["tildes-y-signos", "ruta-peligrosa", "con-extension", "vacia"],
+)
+def test_la_respuesta_del_modelo_se_limpia(respuesta, esperado):
+    """Lo que devuelva el modelo nunca puede convertirse en una ruta peligrosa."""
+    assert a_nombre_seguro(respuesta) == esperado
+
+
+def apuntes(tmp_path):
+    """Una carpeta con un apunte de texto que el modelo falso puede «leer»."""
+    carpeta = tmp_path / "Apuntes"
+    carpeta.mkdir()
+    (carpeta / "tema-1.txt").write_text(
+        "La CPU ejecuta instrucciones.", encoding="utf-8"
+    )
+    return carpeta
+
+
+def test_resumir_con_un_modelo_falso(tmp_path, modelo_falso):
+    """Resumir escribe el .md y manda el documento entre etiquetas."""
+    falso = modelo_falso("- La CPU ejecuta instrucciones")
+    accion = {
+        "nombre": "resumir",
+        "descripcion": "x",
+        "tipo": "resumir",
+        "destino": str(tmp_path / "Res"),
+    }
+    motor = Motor([accion])
+    motor.proveedor = falso
+    [resultado] = motor.ejecutar("resumir", apuntes(tmp_path), simular=False)
+    assert resultado.estado == "hecho"
+    resumen = (tmp_path / "Res" / "tema-1.resumen.md").read_text(encoding="utf-8")
+    assert "La CPU" in resumen
+    assert "<documento" in falso.preguntas[0]
+    assert "tema-1.txt" in falso.preguntas[0]
+
+
+def test_simular_no_pregunta_al_modelo(tmp_path, modelo_falso):
+    """--simular cuenta caracteres y no gasta ni una llamada."""
+    falso = modelo_falso("no debería usarse")
+    accion = {"nombre": "resumir", "descripcion": "x", "tipo": "resumir"}
+    motor = Motor([accion])
+    motor.proveedor = falso
+    [resultado] = motor.ejecutar("resumir", apuntes(tmp_path), simular=True)
+    assert resultado.estado == "simulado"
+    assert "sin gastar" in resultado.detalle
+    assert falso.preguntas == []
+
+
+def test_categoria_rara_no_inventa_carpeta(tmp_path, modelo_falso):
+    """Si el modelo contesta algo que no está en la lista, se salta: no se
+    inventan carpetas como «mates» ni se mueve el fichero."""
+    accion = {
+        "nombre": "clasificar",
+        "descripcion": "x",
+        "tipo": "clasificar",
+        "categorias": ["redes", "linux"],
+        "destino": str(tmp_path / "Asig"),
+    }
+    motor = Motor([accion])
+    motor.proveedor = modelo_falso("Creo que es de mates")
+    [resultado] = motor.ejecutar("clasificar", apuntes(tmp_path), simular=False)
+    assert resultado.estado == "saltado"
+    assert "no es una categoría conocida" in resultado.detalle
+    assert not (tmp_path / "Asig").exists()
+    assert (tmp_path / "Apuntes" / "tema-1.txt").exists()
+
+
+def test_sin_clave_no_hay_ia():
+    """Sin CENTRO_IA_KEY, desde_entorno avisa y no inventa un proveedor."""
+    with pytest.raises(IANoDisponible, match="CENTRO_IA_KEY"):
+        ProveedorCentro.desde_entorno()
+
+
+def test_sin_red_el_mensaje_es_humano():
+    """Un puerto cerrado da un mensaje que se entiende, no un traceback."""
+    proveedor = ProveedorCentro("http://127.0.0.1:9/v1", "clave-de-prueba")
+    with pytest.raises(IANoDisponible, match="conexión"):
+        proveedor.completar("sistema", "usuario")

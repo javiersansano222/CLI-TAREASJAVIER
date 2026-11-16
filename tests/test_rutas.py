@@ -32,6 +32,25 @@ def test_no_distingue_tildes_ni_mayusculas(tmp_path):
     assert resolver_carpeta("~/DESCARGAS") == tmp_path / "Downloads"
 
 
+def test_en_valenciano_descargas_es_baixades(tmp_path):
+    """En un Windows en valenciano, ~/Descargas acaba en ~/Baixades."""
+    (tmp_path / "Baixades").mkdir()
+    assert resolver_carpeta("~/Descargas") == tmp_path / "Baixades"
+
+
+def test_en_valenciano_capturas_es_captures_de_pantalla(tmp_path):
+    """~/Imágenes/Capturas se resuelve a ~/Imatges/Captures de pantalla."""
+    destino = tmp_path / "Imatges" / "Captures de pantalla"
+    destino.mkdir(parents=True)
+    assert resolver_carpeta("~/Imágenes/Capturas") == destino
+
+
+def test_desde_valenciano_tambien_se_llega_al_ingles(tmp_path):
+    """Y al revés: ~/Baixades funciona en un sistema en inglés."""
+    (tmp_path / "Downloads").mkdir()
+    assert resolver_carpeta("~/Baixades") == tmp_path / "Downloads"
+
+
 def test_sin_equivalente_devuelve_la_ruta_original(tmp_path):
     """Si no hay traducción, no se inventa nada: se devuelve lo pedido."""
     assert resolver_carpeta("~/NoExiste") == tmp_path / "NoExiste"

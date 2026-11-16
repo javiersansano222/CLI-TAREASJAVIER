@@ -854,8 +854,10 @@ WebP animada y un PNG con contenido JPEG dentro):
 - JSON roto con `--config` → ✘ con el motivo exacto (línea y columna) y código 3.
 - Config válida con avisos → resumen amarillo y código 0.
 - Los orígenes se traducen: si `~/Descargas` no existe pero sí `~/Downloads`
-  (Windows en inglés), la acción cuenta como ✔. Igual con `~/Imágenes/Capturas`
-  → `~/Pictures/Screenshots`. Así el mismo `acciones.json` vale en casa y en clase.
+  (Windows en inglés) o `~/Baixades` (en valenciano), la acción cuenta como ✔.
+  Igual con `~/Imágenes/Capturas` → `~/Pictures/Screenshots` o
+  `~/Imatges/Captures de pantalla`. Así el mismo `acciones.json` vale en casa y
+  en clase.
 - La IA sin `CENTRO_IA_KEY`/`CENTRO_IA_URL` sale como ℹ «sin configurar», no
   como aviso: fuera del centro es lo normal y `tareas ia …` sigue saliendo con
   código 4 si se usa.

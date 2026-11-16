@@ -8,6 +8,10 @@ Todos los cambios que notará quien USA la herramienta. Formato:
 
 ### Añadido
 
+- `tareas organizar <carpeta>`: mueve los ficheros del primer nivel a
+  `Documentos`, `Imagenes`, `Videos`, `Audio`, `Comprimidos`, `Instaladores` y
+  `Otros` según su extensión. Con `--simular` no toca nada y con `--copiar`
+  deja el original. Nunca sobrescribe y no entra en subcarpetas.
 - `tareas tema`: cambia los colores de toda la terminal (fondo, texto, cursor y
   los 16 colores ANSI), no solo el del menú. Seis temas: `medianoche`,
   `matrix`, `papel`, `ambar`, `oceano` y `contraste`.

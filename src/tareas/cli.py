@@ -21,6 +21,7 @@ from tareas import exportar_tema as modulo_exportar
 from tareas import ia as modulo_ia
 from tareas import imagenes as modulo_imagenes
 from tareas import informe as modulo_informe
+from tareas import organizar as modulo_organizar
 from tareas import temporales as modulo_temporales
 from tareas import terminal as modulo_terminal
 from tareas.acciones import Resultado
@@ -126,7 +127,10 @@ def _pintar_resultados(
                 f"[red]✘ {escape(str(resultado.origen))}: {escape(detalle)}[/red]"
             )
 
-    hechos = sum(resultado.estado == "hecho" for resultado in resultados)
+    hechos = sum(
+        resultado.estado in ("hecho", "movido", "copiado")
+        for resultado in resultados
+    )
     simulados = sum(resultado.estado == "simulado" for resultado in resultados)
     saltados = sum(resultado.estado == "saltado" for resultado in resultados)
     errores = sum(resultado.estado == "error" for resultado in resultados)
@@ -570,6 +574,50 @@ def listar(
         tabla.add_row(escape(ruta.name), tipo, tamano, fecha)
 
     consola.print(tabla)
+
+
+@app.command()
+def organizar(
+    carpeta: Annotated[
+        Path,
+        typer.Argument(help="Carpeta que quieres ordenar (por defecto, la actual)."),
+    ] = Path("."),
+    simular: Annotated[
+        bool,
+        typer.Option("--simular", help="Enseña qué haría sin mover ni copiar nada."),
+    ] = False,
+    copiar: Annotated[
+        bool,
+        typer.Option("--copiar", help="Copia los ficheros en vez de moverlos."),
+    ] = False,
+) -> None:
+    """Ordena los ficheros de una carpeta en subcarpetas por tipo."""
+    ruta = carpeta.expanduser()
+    try:
+        resultados = modulo_organizar.ejecutar(
+            ruta, simular=simular, copiar=copiar
+        )
+    except TareasError as error:
+        _mostrar_error(error)
+
+    if not resultados:
+        consola.print(
+            f"No hay ficheros que ordenar en «{escape(str(ruta))}»."
+        )
+        return
+
+    if not _pintar_resultados(
+        resultados, "organizar", simular, ruta_completa=False
+    ):
+        raise typer.Exit(code=1)
+
+    if not simular:
+        carpetas = sorted(
+            {resultado.destino.parent.name for resultado in resultados if resultado.destino}
+        )
+        consola.print(
+            f"[dim]Carpetas: {escape(', '.join(carpetas))}.[/dim]"
+        )
 
 
 @app.command()

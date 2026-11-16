@@ -506,6 +506,26 @@ antigüedad. Ignora subcarpetas, enlaces simbólicos y ficheros recientes. Sin
 `--si`, pide confirmación, y `--simular` enseña la lista sin enviar nada a la
 papelera.
 
+## Organizar una carpeta
+
+`tareas organizar` mueve los ficheros del primer nivel de una carpeta a
+subcarpetas según su tipo: `Documentos`, `Imagenes`, `Videos`, `Audio`,
+`Comprimidos`, `Instaladores` y `Otros`.
+
+```bash
+tareas organizar ~/Descargas --simular
+tareas organizar ~/Descargas
+tareas organizar ~/Descargas --copiar
+```
+
+- Por defecto **mueve**; con `--copiar` deja el original y crea una copia
+  clasificada.
+- `--simular` enseña la tabla con el destino de cada fichero sin tocar nada.
+- Nunca sobrescribe: si el destino existe, añade ` (1)`, ` (2)`…
+- No entra en subcarpetas (las que crea él incluidas) ni toca ficheros
+  ocultos como `.env`.
+- Si un fichero falla, la orden sigue con los demás y sale con código 1.
+
 ## Informe de descargas
 
 `tareas informe` muestra un resumen de solo lectura de la carpeta de descargas:

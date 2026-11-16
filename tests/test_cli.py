@@ -221,3 +221,39 @@ def test_tema_desconocido_sale_con_1():
     resultado = runner.invoke(app, ["tema", "neon"])
     assert resultado.exit_code == 1
     assert "No hay ningún tema" in salida(resultado)
+
+
+def test_organizar_simular_no_mueve_nada(tmp_path):
+    """`organizar --simular` enseña el plan y deja los ficheros donde están."""
+    (tmp_path / "nota.pdf").write_text("x", encoding="utf-8")
+    resultado = runner.invoke(app, ["organizar", str(tmp_path), "--simular"])
+    assert resultado.exit_code == 0
+    assert "simulado" in salida(resultado)
+    assert "SIMULACIÓN" in salida(resultado)
+    assert (tmp_path / "nota.pdf").is_file()
+    assert not (tmp_path / "Documentos").exists()
+
+
+def test_organizar_mueve_los_ficheros(tmp_path):
+    """Sin --simular, el fichero acaba en la carpeta de su tipo."""
+    (tmp_path / "foto.JPG").write_text("x", encoding="utf-8")
+    resultado = runner.invoke(app, ["organizar", str(tmp_path)])
+    assert resultado.exit_code == 0
+    assert "movido" in salida(resultado)
+    assert (tmp_path / "Imagenes" / "foto.JPG").is_file()
+    assert not (tmp_path / "foto.JPG").exists()
+
+
+def test_organizar_carpeta_inexistente_sale_con_1(tmp_path):
+    """Código 1: la carpeta no existe y se explica sin traceback."""
+    resultado = runner.invoke(app, ["organizar", str(tmp_path / "no-existe")])
+    assert resultado.exit_code == 1
+    assert "no existe" in salida(resultado)
+    assert "Traceback" not in salida(resultado)
+
+
+def test_organizar_aparece_en_la_ayuda():
+    """La orden nueva se lista en `tareas --help`."""
+    resultado = runner.invoke(app, ["--help"])
+    assert resultado.exit_code == 0
+    assert "organizar" in salida(resultado)

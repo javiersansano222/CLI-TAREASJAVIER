@@ -130,6 +130,8 @@ def _pintar_menu(app: typer.Typer) -> None:
         ("mirar-espacio", "Muestra el espacio y el número de ficheros de una carpeta"),
         ("capturas", "Envía a la papelera las capturas antiguas"),
         ("temporales", "Envía a la papelera los temporales antiguos"),
+        ("organizar", "Ordena los ficheros de una carpeta por tipo"),
+        ("listar", "Lista los ficheros de una carpeta en una tabla"),
         ("informe", "Muestra un resumen de la carpeta de descargas"),
         ("imagenes", "Lista o comprime imágenes"),
         ("validar", "Valida que acciones.json cumple el esquema"),
@@ -139,6 +141,7 @@ def _pintar_menu(app: typer.Typer) -> None:
         ("ia sugerir <descripción>", "La IA propone una acción para acciones.json"),
         ("ia explicar <acción>", "La IA explica qué haría una acción, en claro"),
         ("cambio", "Cambia el color del menú (rojo, normal, azul, verde, amarillo)"),
+        ("tema", "Cambia los colores de todo el terminal (seis temas o uno propio)"),
         ("cita", "Muestra una cita motivacional aleatoria"),
     ]
     

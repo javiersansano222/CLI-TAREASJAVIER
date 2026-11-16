@@ -526,6 +526,28 @@ tareas organizar ~/Descargas --copiar
   ocultos como `.env`.
 - Si un fichero falla, la orden sigue con los demás y sale con código 1.
 
+## Mover un fichero concreto
+
+`tareas mover` lleva **un fichero** de donde esté a la carpeta que le indiques.
+No clasifica ni filtra por extensión: tú eliges el archivo y el destino.
+
+```bash
+tareas mover ~/Descargas/apuntes.pdf ~/Documentos
+tareas mover apuntes.pdf ~/Documentos
+tareas mover apuntes.pdf ~/Documentos --simular
+tareas mover apuntes.pdf ~/Documentos --copiar
+```
+
+- Si solo escribes el nombre, lo busca en la carpeta actual y, si no está, en
+  Descargas (`Descargas`, `Downloads`, `Baixades`).
+- `~/Documentos` funciona también en un Windows en inglés: se traduce a
+  `~/Documents`.
+- Si la carpeta destino no existe, la crea.
+- Nunca sobrescribe: si el nombre ya está ocupado, usa `apuntes (1).pdf`.
+- `--simular` enseña la tabla sin tocar nada y `--copiar` deja el original.
+- Una carpeta no se mueve con esta orden: para ordenar carpetas está
+  `tareas organizar`.
+
 ## Informe de descargas
 
 `tareas informe` muestra un resumen de solo lectura de la carpeta de descargas:

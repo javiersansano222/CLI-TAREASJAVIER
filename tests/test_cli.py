@@ -257,3 +257,64 @@ def test_organizar_aparece_en_la_ayuda():
     resultado = runner.invoke(app, ["--help"])
     assert resultado.exit_code == 0
     assert "organizar" in salida(resultado)
+
+
+def test_mover_simular_no_mueve_nada(tmp_path):
+    """`mover --simular` enseña el destino y deja el fichero donde está."""
+    (tmp_path / "apuntes.pdf").write_text("x", encoding="utf-8")
+    destino = tmp_path / "Documentos"
+
+    resultado = runner.invoke(
+        app, ["mover", "apuntes.pdf", str(destino), "--simular"]
+    )
+
+    assert resultado.exit_code == 0
+    assert "simulado" in salida(resultado)
+    assert "SIMULACIÓN" in salida(resultado)
+    assert (tmp_path / "apuntes.pdf").is_file()
+    assert not destino.exists()
+
+
+def test_mover_lleva_el_fichero_a_destino(tmp_path):
+    """Sin --simular, el fichero acaba en la carpeta indicada."""
+    (tmp_path / "apuntes.pdf").write_text("x", encoding="utf-8")
+    destino = tmp_path / "Documentos"
+
+    resultado = runner.invoke(app, ["mover", "apuntes.pdf", str(destino)])
+
+    assert resultado.exit_code == 0
+    assert "movido" in salida(resultado)
+    assert (destino / "apuntes.pdf").is_file()
+    assert not (tmp_path / "apuntes.pdf").exists()
+
+
+def test_mover_copiar_deja_el_original(tmp_path):
+    """Con --copiar el fichero sigue en su sitio y aparece la copia."""
+    (tmp_path / "apuntes.pdf").write_text("x", encoding="utf-8")
+    destino = tmp_path / "Documentos"
+
+    resultado = runner.invoke(
+        app, ["mover", "apuntes.pdf", str(destino), "--copiar"]
+    )
+
+    assert resultado.exit_code == 0
+    assert "copiado" in salida(resultado)
+    assert (destino / "apuntes.pdf").is_file()
+    assert (tmp_path / "apuntes.pdf").is_file()
+
+
+def test_mover_fichero_inexistente_sale_con_1(tmp_path):
+    """Código 1: no se encuentra el fichero y se explica sin traceback."""
+    resultado = runner.invoke(
+        app, ["mover", "fantasma.pdf", str(tmp_path / "Documentos")]
+    )
+    assert resultado.exit_code == 1
+    assert "No encuentro" in salida(resultado)
+    assert "Traceback" not in salida(resultado)
+
+
+def test_mover_aparece_en_la_ayuda():
+    """La orden nueva se lista en `tareas --help`."""
+    resultado = runner.invoke(app, ["--help"])
+    assert resultado.exit_code == 0
+    assert "mover" in salida(resultado)

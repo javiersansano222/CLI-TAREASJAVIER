@@ -8,6 +8,10 @@ Todos los cambios que notará quien USA la herramienta. Formato:
 
 ### Añadido
 
+- `tareas mover <archivo> <carpeta>`: mueve un fichero concreto a la carpeta
+  que elijas. Si solo das el nombre, lo busca en la carpeta actual y en
+  Descargas; si la carpeta destino no existe, la crea; nunca sobrescribe. Con
+  `--simular` no toca nada y con `--copiar` deja el original.
 - `tareas organizar <carpeta>`: mueve los ficheros del primer nivel a
   `Documentos`, `Imagenes`, `Videos`, `Audio`, `Comprimidos`, `Instaladores` y
   `Otros` según su extensión. Con `--simular` no toca nada y con `--copiar`

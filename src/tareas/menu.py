@@ -131,6 +131,7 @@ def _pintar_menu(app: typer.Typer) -> None:
         ("capturas", "Envía a la papelera las capturas antiguas"),
         ("temporales", "Envía a la papelera los temporales antiguos"),
         ("organizar", "Ordena los ficheros de una carpeta por tipo"),
+        ("mover <archivo> <carpeta>", "Mueve un fichero concreto a otra carpeta"),
         ("listar", "Lista los ficheros de una carpeta en una tabla"),
         ("informe", "Muestra un resumen de la carpeta de descargas"),
         ("imagenes", "Lista o comprime imágenes"),

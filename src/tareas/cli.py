@@ -21,6 +21,7 @@ from tareas import exportar_tema as modulo_exportar
 from tareas import ia as modulo_ia
 from tareas import imagenes as modulo_imagenes
 from tareas import informe as modulo_informe
+from tareas import mover as modulo_mover
 from tareas import organizar as modulo_organizar
 from tareas import temporales as modulo_temporales
 from tareas import terminal as modulo_terminal
@@ -618,6 +619,39 @@ def organizar(
         consola.print(
             f"[dim]Carpetas: {escape(', '.join(carpetas))}.[/dim]"
         )
+
+
+@app.command()
+def mover(
+    archivo: Annotated[
+        Path,
+        typer.Argument(
+            help="Fichero que quieres mover (ruta completa o solo el nombre)."
+        ),
+    ],
+    destino: Annotated[
+        Path,
+        typer.Argument(help="Carpeta donde quieres dejarlo."),
+    ],
+    simular: Annotated[
+        bool,
+        typer.Option("--simular", help="Enseña qué haría sin mover ni copiar nada."),
+    ] = False,
+    copiar: Annotated[
+        bool,
+        typer.Option("--copiar", help="Copia el fichero y deja el original."),
+    ] = False,
+) -> None:
+    """Mueve un fichero concreto a la carpeta que le indiques."""
+    try:
+        resultado = modulo_mover.ejecutar(
+            archivo, destino, simular=simular, copiar=copiar
+        )
+    except TareasError as error:
+        _mostrar_error(error)
+
+    if not _pintar_resultados([resultado], "mover", simular, ruta_completa=False):
+        raise typer.Exit(code=1)
 
 
 @app.command()

@@ -1019,6 +1019,7 @@ def doctor(ctx: typer.Context) -> None:
         c for c in comprobaciones if c.estado == "error"
     ]
     avisos = [c for c in comprobaciones if c.estado == "aviso"]
+    informes = [c for c in comprobaciones if c.estado == "info"]
 
     if errores:
         plural = "" if len(errores) == 1 else "s"
@@ -1033,9 +1034,12 @@ def doctor(ctx: typer.Context) -> None:
             f"[yellow]⚠ {len(avisos)} aviso{plural}:"
             " la herramienta funciona, pero algo puede no estar listo.[/yellow]"
         )
-        return
+    else:
+        consola.print("[green]✔ Todo listo.[/green]")
 
-    consola.print("[green]✔ Todo listo.[/green]")
+    if informes:
+        nombres = ", ".join(comprobacion.nombre for comprobacion in informes)
+        consola.print(f"[dim]ℹ Sin configurar: {escape(nombres)}.[/dim]")
 
 
 @app.command("comprobar-ia")

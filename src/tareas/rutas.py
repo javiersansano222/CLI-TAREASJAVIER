@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import itertools
 import os
 from pathlib import Path
+import unicodedata
 
 NOMBRES_DESCARGAS = (
     "Downloads",
@@ -12,6 +14,65 @@ NOMBRES_DESCARGAS = (
     "Téléchargements",
     "Scaricati",
 )
+
+# Cómo se llama cada carpeta personal en otros idiomas. Sirve para que un
+# acciones.json escrito con «~/Descargas» funcione en un Windows en inglés.
+EQUIVALENTES: dict[str, tuple[str, ...]] = {
+    "descargas": ("Downloads", "Baixades"),
+    "downloads": ("Descargas", "Baixades"),
+    "baixades": ("Downloads", "Descargas"),
+    "imagenes": ("Pictures", "Imatges", "Images"),
+    "pictures": ("Imágenes", "Imatges", "Images"),
+    "imatges": ("Pictures", "Imágenes"),
+    "escritorio": ("Desktop", "Escriptori", "Bureau"),
+    "desktop": ("Escritorio", "Escriptori", "Bureau"),
+    "escriptori": ("Desktop", "Escritorio"),
+    "documentos": ("Documents",),
+    "documents": ("Documentos",),
+    "musica": ("Music",),
+    "music": ("Música", "Musica"),
+    "videos": ("Videos",),
+    "plantillas": ("Templates",),
+    "templates": ("Plantillas",),
+    "capturas": ("Screenshots", "Capturas de pantalla"),
+    "capturas de pantalla": ("Screenshots",),
+    "screenshots": ("Capturas", "Capturas de pantalla"),
+}
+
+
+def _sin_tildes(texto: str) -> str:
+    """Minúsculas y sin tildes, para comparar «Imágenes» con «imagenes»."""
+    descompuesto = unicodedata.normalize("NFD", texto.lower())
+    return "".join(
+        letra for letra in descompuesto if unicodedata.category(letra) != "Mn"
+    )
+
+
+def resolver_carpeta(origen: str | Path) -> Path:
+    """Expande ~ y, si la carpeta no existe, prueba su nombre en otro idioma.
+
+    Si no hay equivalente o ninguno existe, devuelve la ruta original: quien
+    decide si eso es un problema es la orden, no esta función.
+    """
+    ruta = Path(origen).expanduser()
+    if ruta.exists():
+        return ruta
+    try:
+        partes = ruta.relative_to(Path.home()).parts
+    except ValueError:
+        return ruta
+    if not partes:
+        return ruta
+
+    opciones = [
+        [parte, *EQUIVALENTES.get(_sin_tildes(parte), ())]
+        for parte in partes
+    ]
+    for combinacion in itertools.product(*opciones):
+        candidata = Path.home().joinpath(*combinacion)
+        if candidata.exists():
+            return candidata
+    return ruta
 
 
 def carpeta_descargas() -> Path:

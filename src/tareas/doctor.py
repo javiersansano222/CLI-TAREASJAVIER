@@ -9,18 +9,23 @@ from typing import Any
 
 from . import config as configuracion
 from .errores import ConfigError
-from .rutas import carpeta_descargas
+from .rutas import carpeta_descargas, resolver_carpeta
 
-ESTADOS = ("ok", "aviso", "error")
-SIMBOLO = {"ok": "✔", "aviso": "⚠", "error": "✘"}
-COLOR = {"ok": "green", "aviso": "yellow", "error": "red"}
+ESTADOS = ("ok", "info", "aviso", "error")
+SIMBOLO = {"ok": "✔", "info": "ℹ", "aviso": "⚠", "error": "✘"}
+COLOR = {
+    "ok": "green",
+    "info": "cyan",
+    "aviso": "yellow",
+    "error": "red",
+}
 
 PRUEBAS = Path.home() / "pruebas-tareas"
 
 
 @dataclass(frozen=True)
 class Comprobacion:
-    """Resultado de una comprobación: nombre, estado (ok/aviso/error) y detalle."""
+    """Resultado de una comprobación: nombre, estado (ok/info/aviso/error) y detalle."""
 
     nombre: str
     estado: str
@@ -105,7 +110,7 @@ def comprobar_origenes(acciones: list[dict[str, Any]]) -> list[Comprobacion]:
                 )
             )
             continue
-        ruta = Path(origen).expanduser()
+        ruta = resolver_carpeta(origen)
         if ruta.is_dir():
             comprobaciones.append(
                 Comprobacion(f"Origen «{nombre}»", "ok", str(ruta))
@@ -122,7 +127,7 @@ def comprobar_origenes(acciones: list[dict[str, Any]]) -> list[Comprobacion]:
 
 
 def comprobar_ia() -> Comprobacion:
-    """Aviso si faltan las variables de entorno para las órdenes con IA."""
+    """Marca la IA como sin configurar (ℹ) si faltan sus variables de entorno."""
     import os
 
     from .ia import cargar_dotenv
@@ -137,8 +142,9 @@ def comprobar_ia() -> Comprobacion:
         return Comprobacion("IA del centro", "ok", "variables configuradas")
     return Comprobacion(
         "IA del centro",
-        "aviso",
-        f"falta {', '.join(faltan)}: «tareas ia ...» no estará disponible",
+        "info",
+        f"sin configurar ({', '.join(faltan)}): «tareas ia ...» no está "
+        "disponible; es normal fuera del centro",
     )
 
 

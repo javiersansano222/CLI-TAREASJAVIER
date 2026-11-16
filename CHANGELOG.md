@@ -26,6 +26,11 @@ Todos los cambios que notará quien USA la herramienta. Formato:
 ### Cambiado
 
 - El README explica los temas, sus límites por terminal y cómo importarlos.
+- `tareas doctor` traduce las carpetas personales: `~/Descargas` funciona
+  aunque el sistema las llame `~/Downloads`, y `~/Imágenes/Capturas` aunque sean
+  `~/Pictures/Screenshots`. Lo mismo al ejecutar acciones.
+- La IA sin configurar sale en `doctor` como ℹ «sin configurar» y ya no cuenta
+  como aviso: fuera de la red del centro es lo esperado.
 
 ## [1.0.0] - 2026-11-19
 

@@ -108,6 +108,18 @@ def test_ia_sin_clave_sale_con_4(escribir_config, tmp_path):
     assert "siguen funcionando" in salida(resultado)
 
 
+def test_doctor_avisa_de_ia_sin_configurar_sin_contarlo_como_aviso(
+    escribir_config, tmp_path
+):
+    """La IA sin clave se muestra como «sin configurar», no como aviso."""
+    (tmp_path / "Downloads").mkdir()
+    ruta = escribir_config([ACCION_RESUMIR])
+    resultado = runner.invoke(app, ["--config", str(ruta), "doctor"])
+    assert resultado.exit_code == 0
+    assert "Sin configurar" in salida(resultado)
+    assert "0 avisos" not in salida(resultado)
+
+
 def test_tema_sin_argumentos_lista_los_disponibles():
     """`tareas tema` no cambia nada: enseña los temas que hay."""
     resultado = runner.invoke(app, ["tema"])

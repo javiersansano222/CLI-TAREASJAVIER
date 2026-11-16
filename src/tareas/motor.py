@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any
 
 from .acciones import Accion, AccionIA, Resultado
 from .errores import TareasError
+from .rutas import resolver_carpeta
 
 if TYPE_CHECKING:  # solo para anotar el tipo: .ia no debe importar al motor
     from .ia import ProveedorIA
@@ -39,7 +40,7 @@ class Motor:
         """Devuelve la carpeta resuelta de una acción: la indicada o su origen."""
         accion = self.obtener(nombre)
         ruta = carpeta if carpeta is not None else accion.config.get("origen", ".")
-        return Path(ruta).expanduser()
+        return resolver_carpeta(ruta)
 
     @staticmethod
     def seleccionar(carpeta: Path, filtro: dict[str, Any]) -> list[Path]:

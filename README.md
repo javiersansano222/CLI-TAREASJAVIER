@@ -7,7 +7,7 @@ Mi herramienta de línea de órdenes para automatizar tareas repetitivas con fic
 1. **Problema:** cada semana pierdo tiempo ordenando Descargas, limpiando temporales antiguos y poniendo nombre a las capturas a mano.
 2. **Para quién:** para mí y para mis compañeros de clase.
 3. **Cómo se usa:** `tareas ORDEN [CARPETA] [opciones]` desde cualquier terminal.
-4. **Órdenes:** `--help`, `version`, `hola`, `cambio`, `listar`, `capturas`, `temporales`, `informe`, `imagenes`, `chuleta`, `sistema`, `cita`, `acciones`, `validar`, `ejecutar`, `doctor`, `comprobar-ia` y `ia sugerir`/`ia explicar`.
+4. **Órdenes:** `--help`, `version`, `hola`, `cambio`, `tema`, `listar`, `organizar`, `mover`, `capturas`, `temporales`, `informe`, `imagenes`, `chuleta`, `sistema`, `cita`, `acciones`, `validar`, `ejecutar`, `doctor`, `comprobar-ia` y `ia sugerir`/`ia explicar`.
 5. **Mis acciones:** limpiar temporales de más de 30 días, mover imágenes a `~/Imágenes/Fotos`, renombrar capturas por fecha y copiar instaladores `.exe`/`.deb` a una carpeta de respaldo.
 6. **Nunca hará:** borrar sin pedir confirmación (salvo `--si`) ni tocar ficheros fuera del origen y destino configurados.
 7. **Plataformas:** Linux primero; también Windows y macOS.
@@ -200,11 +200,21 @@ uv run tareas --config acciones-win.json ejecutar renombrar-capturas --simular
 tareas                  # abre el menú interactivo
 tareas --help           # ayuda general
 tareas cambio           # abre el menú en rojo
+tareas tema matrix      # cambia los colores de toda la terminal
 tareas chuleta          # referencia rápida de Git y Linux
 tareas sistema          # disco y memoria en uso
+tareas doctor           # diagnostica el entorno
 
 hola
 tareas hola
+
+tareas listar ~/Descargas
+
+tareas organizar ~/pruebas-tareas/mezcla --simular
+tareas organizar ~/pruebas-tareas/mezcla
+
+tareas mover ~/Descargas/apuntes.pdf ~/Documentos --simular
+tareas mover ~/Descargas/apuntes.pdf ~/Documentos
 
 tareas capturas --simular
 tareas capturas
@@ -346,6 +356,8 @@ tareas> capturas --simular
 tareas> temporales --simular
 tareas> informe --top 3
 tareas> imagenes --comprimir --simular
+tareas> organizar ~/pruebas-tareas/mezcla --simular
+tareas> mover ~/Descargas/apuntes.pdf ~/Documentos --simular
 tareas> salir
 ```
 
@@ -719,28 +731,34 @@ cli-tareas/
 │   ├── prompts.md             Cuaderno de prompts
 │   └── adr/
 │       ├── 0001-configuracion-externa.md
-│       └── 0002-ia-interfaz-y-salida-4.md
-├── tests/                     Suite con pytest (68 en verde)
+│       ├── 0002-ia-interfaz-y-salida-4.md
+│       └── 0003-temas-de-terminal.md
+├── tests/                     Suite con pytest (185 en verde)
 └── src/
     └── tareas/
         ├── __init__.py        Versión y salida en UTF-8
         ├── __main__.py        python -m tareas
+        ├── acciones.py        Resultado, destino_libre y las acciones con IA
+        ├── ajustes.py         Preferencias guardadas (tema elegido)
         ├── bienvenida.py      Banner ASCII de bienvenida
         ├── capturas.py        Detecta capturas y las manda a la papelera
         ├── chuleta.py         Chuleta de Git y comandos de Linux
-         ├── cli.py             Órdenes, opciones y salida
-         ├── sistema.py         Disco y memoria en uso
-         ├── config.py          Carga y valida acciones.json
-         ├── doctor.py          Diagnóstico de solo lectura del entorno
-         ├── ia.py              ProveedorIA y ProveedorCentro (httpx, .env)
-         ├── rutas.py           Detección de la carpeta de descargas (XDG)
-         ├── imagenes.py        Comprime imágenes sin tocar los originales
+        ├── cli.py             Órdenes, opciones y salida
+        ├── config.py          Carga y valida acciones.json
+        ├── doctor.py          Diagnóstico de solo lectura del entorno
+        ├── errores.py         Excepciones propias y códigos de salida
+        ├── exportar_tema.py   Esquemas de terminal para cada tema
+        ├── ia.py              ProveedorIA y ProveedorCentro (httpx, .env)
+        ├── imagenes.py        Comprime imágenes sin tocar los originales
         ├── informe.py         Cuenta ficheros, tipos y capturas pendientes
         ├── menu.py            Menú interactivo de todas las órdenes
+        ├── motor.py           Selecciona ficheros y ejecuta la acción
+        ├── mover.py           Lleva un fichero concreto a otra carpeta
+        ├── organizar.py       Ordena una carpeta en subcarpetas por tipo
+        ├── rutas.py           Carpetas habituales del sistema en varios idiomas
+        ├── sistema.py         Disco y memoria en uso
         ├── temporales.py      Detecta temporales antiguos y los manda a la papelera
-         ├── errores.py         Excepciones propias
-         ├── acciones.py        Clases Mover, Copiar, Renombrar, Borrar y MirarEspacio
-        └── motor.py           Selecciona ficheros y ejecuta la acción
+        └── terminal.py        Temas de color para la terminal
 ```
 
 ## Estado de la semana 1
@@ -1026,3 +1044,28 @@ Comprobado en Windows Terminal con una carpeta de configuración temporal
 - En el resto de terminales la detección se prueba con entornos simulados
   (`WT_SESSION`, `TERM_PROGRAM`, `VTE_VERSION`, `KITTY_WINDOW_ID`, `TMUX` y
   `TERM`), sin depender del equipo donde se ejecuten las pruebas.
+
+## Estado de `organizar` y `mover`
+
+Comprobado en carpetas temporales de `%TEMP%`, nunca sobre carpetas reales:
+
+- `tareas organizar <carpeta> --simular` enseña la tabla con los 5 ficheros en
+  estado «simulado» y no crea ninguna carpeta de categoría; código 0.
+- `tareas organizar <carpeta>` mueve esos 5 ficheros a `Documentos`,
+  `Imagenes`, `Videos`, `Comprimidos` y `Otros`. El `.env` se queda donde
+  estaba y un `apuntes.pdf` que ya existía en `Documentos` no se pisa: aparece
+  `apuntes (1).pdf`. Código 0.
+- `--copiar` deja el original y crea la copia clasificada.
+- `tareas organizar` con una carpeta que no existe sale con **código 1** y un
+  mensaje claro, sin traceback.
+- `tareas mover <archivo> <carpeta>` mueve un solo fichero y crea la carpeta
+  destino si no existe; código 0.
+- Si solo se escribe el nombre, lo busca primero en la carpeta actual y
+  después en Descargas (`Descargas`, `Downloads`, `Baixades`).
+- `--simular` no toca nada, `--copiar` deja el original y, si el nombre ya
+  existe en destino, se usa `apuntes (1).pdf`: nunca se sobrescribe.
+- Fichero inexistente, fichero que ya está en esa carpeta, o un destino que es
+  un fichero y no una carpeta: **código 1** con el motivo. Si lo que se pasa es
+  una carpeta, se rechaza y se remite a `tareas organizar`.
+- Todo esto está cubierto por `tests/test_organizar.py` y
+  `tests/test_mover.py`, más los casos de CLI de `tests/test_cli.py`.

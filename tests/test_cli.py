@@ -32,9 +32,15 @@ COLORES = re.compile(r"\x1b\[[0-9;]*m")
 
 
 def salida(resultado) -> str:
-    """stdout + stderr, sin colores: Rich manda los errores por la salida de error."""
+    """stdout + stderr, sin colores y con los espacios normalizados.
+
+    Rich manda los errores por la salida de error y, además, parte las frases
+    largas según el ancho de la consola. Al juntar los espacios y los saltos
+    de línea, la prueba mira el texto y no el formato de la tabla, así que no
+    depende del sistema ni del tamaño de la terminal.
+    """
     texto = (resultado.output or "") + (getattr(resultado, "stderr", "") or "")
-    return COLORES.sub("", texto)
+    return " ".join(COLORES.sub("", texto).split())
 
 
 def test_la_ayuda_funciona():

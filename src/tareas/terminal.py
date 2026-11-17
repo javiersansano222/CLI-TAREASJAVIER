@@ -219,6 +219,8 @@ def detectar(entorno: dict[str, str] | None = None) -> Soporte:
     """Mira las variables del entorno para saber si el terminal admite OSC."""
     env = os.environ if entorno is None else entorno
 
+    if env.get("TERM") == "dumb":
+        return Soporte(False, "terminal sin color", "TERM=dumb no admite colores")
     if env.get("WT_SESSION"):
         return Soporte(True, "Windows Terminal")
     programa = env.get("TERM_PROGRAM", "")
@@ -240,8 +242,6 @@ def detectar(entorno: dict[str, str] | None = None) -> Soporte:
             "tmux/screen",
             "el multiplexor se queda las secuencias; aplícalo fuera de tmux",
         )
-    if env.get("TERM") == "dumb":
-        return Soporte(False, "terminal sin color", "TERM=dumb no admite colores")
     if env.get("TERM", "").startswith(("xterm", "rxvt")):
         return Soporte(True, "xterm")
     if os.name == "nt":

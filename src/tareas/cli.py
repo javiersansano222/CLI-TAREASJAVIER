@@ -74,6 +74,7 @@ def fecha_legible(marca: float) -> str:
 def _mostrar_error(error: TareasError) -> NoReturn:
     consola_err.print(f"[red]✘ {escape(str(error))}[/red]")
     if isinstance(error, modulo_ia.IANoDisponible):
+        consola_err.print(f"[yellow]{escape(error.consejo)}[/yellow]")
         consola_err.print(
             "[dim]Las acciones sin IA siguen funcionando: "
             "mira cuáles con «tareas acciones».[/dim]"
@@ -1267,7 +1268,10 @@ def comprobar_ia() -> None:
             "Responde solo con la palabra: ok", "¿Me oyes?", max_tokens=5
         )
     except TareasError as error:
-        _mostrar_error(error)
+        consola_err.print(f"[red]✘ {escape(str(error))}[/red]")
+        if isinstance(error, modulo_ia.IANoDisponible):
+            consola_err.print(f"[yellow]{escape(error.consejo)}[/yellow]")
+        raise typer.Exit(code=error.codigo_salida)
 
     consola.print(
         f"[green]✔ El modelo responde «{escape(respuesta.texto)}» "

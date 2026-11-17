@@ -311,6 +311,12 @@ tareas ejecutar resumir-apuntes ~/pruebas-tareas/Apuntes --simular
 
 - `comprobar-ia` manda una pregunta mínima y dice si el modelo responde, con
   su tiempo. Muestra la URL y «clave: definida», nunca la clave.
+- Si la IA **no** está disponible, la orden sale con **código 4** y, además
+  del motivo, un aviso en amarillo con el **«Qué hacer»** paso a paso y en
+  lenguaje normal (qué fichero tocar, si hace falta estar en la red del
+  instituto o a quién pedir la clave). El mismo aviso sale en `tareas ia`,
+  `tareas doctor` y las acciones con IA: nadie necesita saber de terminales
+  para arreglarlo, y el resto de órdenes siguen funcionando sin la IA.
 - `ia sugerir` pide una descripción en lenguaje natural y devuelve una acción
   **validada con el esquema real de `acciones.json`**, lista para pegar en el
   fichero. No escribe nada: la propuesta se revisa con `tareas validar` y

@@ -62,9 +62,27 @@ class IANoDisponible(TareasError):
 class FaltaClaveIA(IANoDisponible):
     """Falta CENTRO_IA_KEY o CENTRO_IA_URL en el entorno."""
 
+    @property
+    def consejo(self) -> str:
+        return (
+            "Qué hacer: copia .env.example como .env y rellena la clave y la "
+            "URL que te dio el centro, o pide a tu familia que las añada a "
+            "las variables de entorno del equipo. Sin ellas no pasa nada: el "
+            "resto de tareas funciona igual."
+        )
+
 
 class ErrorRedIA(IANoDisponible):
     """El servidor del centro no responde o ha devuelto algo no válido."""
+
+    @property
+    def consejo(self) -> str:
+        return (
+            "Qué hacer: comprueba que el equipo tiene internet y que estás en "
+            "la red del instituto (fuera de esa red el servidor no contesta). "
+            "Si falla al validar el certificado, sigue el mensaje o pide ayuda "
+            "al profesor. El resto de tareas funciona igual sin IA."
+        )
 
 
 class ErrorIA(TareasError):

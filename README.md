@@ -845,6 +845,24 @@ plantilla, usa: `Copy-Item .env.example .env` o `notepad .env`.
 - Sin clave, la herramienta sigue funcionando: solo las órdenes que necesiten
   IA la pedirán, y explicarán qué falta.
 
+### Compromiso: cero claves en el repositorio
+
+Requisito cumplido: **no hay ninguna clave ni secreto ni en el repositorio ni
+en su historial**. Así se garantiza y así se comprueba:
+
+- La clave vive **solo** en mi máquina: en el `.env` local (excluido por
+  `.gitignore`) o exportada como variable de entorno (`CENTRO_IA_KEY`).
+- El repo solo publica `.env.example`, que es la plantilla con los nombres de
+  variable y **ningún valor**.
+- En el código no hay claves literales: las pruebas usan un proveedor falso
+  con el valor inventado `sk-test-falsa`, que no abre ninguna conexión.
+- El historial está auditado con `git log --all -S"sk-"` y `git grep -E
+  "sk-[A-Za-z0-9]{15,}" $(git rev-list --all)`: **cero coincidencias** de
+  claves reales en ningún commit ni rama.
+- Si el proyecto crece, se puede añadir un análisis automático de secretos en
+  CI (por ejemplo, `gitleaks`); por ahora la comprobación manual de arriba
+  basta y no instala nada en tu equipo.
+
 ## Estado de la bienvenida
 
 - `tareas hola` y el ejecutable directo `hola` muestran el banner ASCII.

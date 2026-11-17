@@ -280,6 +280,14 @@ No crea, mueve ni borra nada. Los ⚠ son avisos (código 0): algo funciona a me
 como una carpeta que falta o una dependencia opcional. Un ✘ es bloqueante (código 3):
 `acciones.json` no se puede leer o no cumple el esquema. Si todo sale ✔, «Todo listo».
 
+`doctor` busca `./acciones.json` en la carpeta desde la que lo lanzas. Si lo
+ejecutas desde otra carpeta, pásale la ruta completa con `--config` (opción
+global, va **antes** de la orden):
+
+```bash
+tareas --config ~/Documents/CLI-TAREASJAVIER/acciones.json doctor
+```
+
 ## IA del centro
 
 El servidor del centro (`CENTRO_IA_URL` + `CENTRO_IA_KEY`) se usa desde dos

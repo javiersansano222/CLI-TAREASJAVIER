@@ -18,6 +18,7 @@ from tareas import capturas as modulo_capturas
 from tareas import config as configuracion
 from tareas import doctor as modulo_doctor
 from tareas import exportar_tema as modulo_exportar
+from tareas import historial as modulo_historial
 from tareas import ia as modulo_ia
 from tareas import imagenes as modulo_imagenes
 from tareas import informe as modulo_informe
@@ -607,6 +608,11 @@ def organizar(
         )
         return
 
+    if not simular:
+        modulo_historial.registrar(
+            "organizar", resultados, "copiar" if copiar else "mover"
+        )
+
     if not _pintar_resultados(
         resultados, "organizar", simular, ruta_completa=False
     ):
@@ -649,6 +655,11 @@ def mover(
         )
     except TareasError as error:
         _mostrar_error(error)
+
+    if not simular:
+        modulo_historial.registrar(
+            "mover", [resultado], "copiar" if copiar else "mover"
+        )
 
     if not _pintar_resultados([resultado], "mover", simular, ruta_completa=False):
         raise typer.Exit(code=1)
@@ -700,6 +711,8 @@ def capturas(
         typer.confirm(f"¿Enviar {len(ficheros)} {texto} a la papelera?", abort=True)
 
     resultados = modulo_capturas.enviar_a_papelera(ficheros, simular)
+    if not simular:
+        modulo_historial.registrar("capturas", resultados, "papelera")
     if not _pintar_resultados(resultados, "capturas", simular, ruta_completa=False):
         raise typer.Exit(code=1)
 
@@ -748,6 +761,8 @@ def temporales(
         )
 
     resultados = modulo_temporales.enviar_a_papelera(ficheros, simular)
+    if not simular:
+        modulo_historial.registrar("temporales", resultados, "papelera")
     if not _pintar_resultados(
         resultados,
         "temporales",
@@ -941,6 +956,8 @@ def imagenes(
         simular,
         convertir_webp=webp,
     )
+    if not simular:
+        modulo_historial.registrar("imagenes", resultados, "crear")
     if not _pintar_imagenes(resultados, simular, webp):
         raise typer.Exit(code=1)
 
@@ -1069,6 +1086,19 @@ def ejecutar(
     except TareasError as error:
         _mostrar_error(error)
 
+    if not simular:
+        tipo = {
+            "mover": "mover",
+            "copiar": "copiar",
+            "renombrar": "renombrar",
+            "renombrar_ia": "renombrar",
+            "clasificar": "mover",
+            "borrar": "borrar",
+            "resumir": "crear",
+        }.get(accion.tipo)
+        if tipo:
+            modulo_historial.registrar(f"ejecutar {nombre}", resultados, tipo)
+
     if not _pintar_resultados(resultados, nombre, simular):
         raise typer.Exit(code=1)
 
@@ -1122,6 +1152,106 @@ def doctor(ctx: typer.Context) -> None:
     if informes:
         nombres = ", ".join(comprobacion.nombre for comprobacion in informes)
         consola.print(f"[dim]ℹ Sin configurar: {escape(nombres)}.[/dim]")
+
+
+@app.command()
+def historial(
+    n: Annotated[
+        int,
+        typer.Option("--n", help="Cuántos lotes mostrar (por defecto, 10)."),
+    ] = 10,
+) -> None:
+    """Muestra las últimas operaciones y si se pueden deshacer."""
+    if n < 1:
+        raise typer.BadParameter("debe ser 1 o más", param_hint="--n")
+
+    lotes = modulo_historial.leer()
+    if not lotes:
+        consola.print(
+            "El historial está vacío: todavía no se ha ejecutado ninguna "
+            "operación que cambie ficheros."
+        )
+        return
+
+    tabla = Table(title="Historial de operaciones")
+    tabla.add_column("Fecha")
+    tabla.add_column("Orden")
+    tabla.add_column("Operaciones", justify="right")
+    tabla.add_column("¿Deshacer?", justify="center")
+    for lote in lotes[-n:]:
+        operaciones = lote.get("operaciones", [])
+        marca = (
+            "[green]sí[/green]"
+            if modulo_historial.reversible(lote)
+            else "[yellow]no[/yellow]"
+        )
+        tabla.add_row(
+            escape(str(lote.get("fecha", "—"))),
+            escape(str(lote.get("orden", "—"))),
+            str(len(operaciones)),
+            marca,
+        )
+    consola.print(tabla)
+    consola.print(
+        f"[dim]{len(lotes)} lote(s) en {escape(str(modulo_historial.ruta()))}. "
+        "Deshaz el último con «tareas deshacer».[/dim]"
+    )
+
+
+@app.command()
+def deshacer(
+    simular: Annotated[
+        bool,
+        typer.Option("--simular", help="Enseña qué revertiría sin tocar nada."),
+    ] = False,
+) -> None:
+    """Revierte el lote reversible más reciente del historial."""
+    try:
+        informe = modulo_historial.deshacer(simular)
+    except TareasError as error:
+        _mostrar_error(error)
+
+    titulo = (
+        "deshacer (SIMULACIÓN: no se ha tocado nada)"
+        if simular
+        else "deshacer (resultado)"
+    )
+    tabla = Table(title=titulo)
+    tabla.add_column("Tipo")
+    tabla.add_column("Origen")
+    tabla.add_column("Destino")
+    tabla.add_column("Estado")
+    tabla.add_column("Detalle")
+    for operacion in informe.operaciones:
+        tabla.add_row(
+            escape(operacion.tipo),
+            escape(str(operacion.origen)),
+            escape(str(operacion.destino) if operacion.destino else "—"),
+            operacion.estado,
+            escape(operacion.detalle),
+        )
+    consola.print(tabla)
+    consola.print(
+        f"Lote «{escape(informe.orden)}» del {escape(informe.fecha)} · "
+        f"deshechas: {informe.deshechas} · simuladas: {informe.simuladas}"
+    )
+    if informe.omitidos:
+        consola.print(
+            f"[dim]Se saltan {informe.omitidos} lote(s) más reciente(s) que no "
+            "se pueden deshacer.[/dim]"
+        )
+
+    if simular:
+        consola.print("Para deshacerlo de verdad, repite la orden sin --simular.")
+        return
+    if informe.deshechas:
+        consola.print("Lote eliminado del historial.")
+        return
+    consola_err.print(
+        "[yellow]⚠ No se ha podido deshacer nada de este lote; "
+        "sigue en el historial.[/yellow]"
+    )
+    raise typer.Exit(code=1)
 
 
 @app.command("comprobar-ia")

@@ -7,7 +7,7 @@ Mi herramienta de línea de órdenes para automatizar tareas repetitivas con fic
 1. **Problema:** cada semana pierdo tiempo ordenando Descargas, limpiando temporales antiguos y poniendo nombre a las capturas a mano.
 2. **Para quién:** para mí y para mis compañeros de clase.
 3. **Cómo se usa:** `tareas ORDEN [CARPETA] [opciones]` desde cualquier terminal.
-4. **Órdenes:** `--help`, `version`, `hola`, `cambio`, `tema`, `listar`, `organizar`, `mover`, `capturas`, `temporales`, `informe`, `imagenes`, `chuleta`, `sistema`, `cita`, `acciones`, `validar`, `ejecutar`, `doctor`, `comprobar-ia` y `ia sugerir`/`ia explicar`.
+4. **Órdenes:** `--help`, `version`, `hola`, `cambio`, `tema`, `listar`, `organizar`, `mover`, `capturas`, `temporales`, `informe`, `imagenes`, `chuleta`, `sistema`, `cita`, `acciones`, `validar`, `ejecutar`, `doctor`, `historial`, `deshacer`, `comprobar-ia` y `ia sugerir`/`ia explicar`.
 5. **Mis acciones:** limpiar temporales de más de 30 días, mover imágenes a `~/Imágenes/Fotos`, renombrar capturas por fecha y copiar instaladores `.exe`/`.deb` a una carpeta de respaldo.
 6. **Nunca hará:** borrar sin pedir confirmación (salvo `--si`) ni tocar ficheros fuera del origen y destino configurados.
 7. **Plataformas:** Linux primero; también Windows y macOS.
@@ -215,6 +215,10 @@ tareas organizar ~/pruebas-tareas/mezcla
 
 tareas mover ~/Descargas/apuntes.pdf ~/Documentos --simular
 tareas mover ~/Descargas/apuntes.pdf ~/Documentos
+
+tareas historial
+tareas deshacer --simular
+tareas deshacer
 
 tareas capturas --simular
 tareas capturas
@@ -567,6 +571,41 @@ tareas mover apuntes.pdf ~/Documentos --copiar
 - `--simular` enseña la tabla sin tocar nada y `--copiar` deja el original.
 - Una carpeta no se mueve con esta orden: para ordenar carpetas está
   `tareas organizar`.
+
+## Historial y deshacer
+
+Cada orden que cambia ficheros apunta un lote en `historial.jsonl`, dentro de
+la misma carpeta de configuración que los temas (`~/.config/tareas` en Linux).
+Así puedes ver qué se hizo y revertir lo último sin buscar a mano.
+
+```bash
+tareas historial
+tareas historial --n 5
+tareas deshacer --simular
+tareas deshacer
+```
+
+`tareas historial` muestra los últimos 10 lotes (fecha, orden, número de
+operaciones y si se pueden deshacer). `tareas deshacer` revierte el último
+lote en orden inverso:
+
+- `mover`, `organizar`, `ejecutar` con `mover`/`clasificar` y los renombrados
+  vuelven a su ruta original.
+- Las copias de `mover --copiar`, `organizar --copiar`, `imagenes --comprimir`
+  y los ficheros creados con `resumir` se mandan a la papelera del sistema.
+- Si el origen ya existe o el destino desapareció, ese fichero se salta y se
+  explica el motivo; nunca se sobrescribe nada.
+- `capturas`, `temporales` y la acción `borrar` también se apuntan, pero
+  `deshacer` avisa de que no se pueden revertir desde aquí (la papelera del
+  sistema no se restaura de forma portable). Si el último lote es de ese tipo,
+  lo salta y revierte el lote reversible más reciente, diciendo cuántos ha
+  saltado.
+- Las simulaciones no se apuntan. El historial guarda rutas absolutas, así que
+  `deshacer` funciona aunque lo lances desde otra carpeta.
+
+Si un lote solo tiene operaciones imposibles de deshacer, `deshacer` sale con
+código 1 y lo deja en el historial para que sepas qué pasó. Cuando revierte
+algo, elimina ese lote del historial y el siguiente `deshacer` va al anterior.
 
 ## Informe de descargas
 

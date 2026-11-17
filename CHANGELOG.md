@@ -4,6 +4,25 @@ Todos los cambios que notará quien USA la herramienta. Formato:
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) · versiones:
 [SemVer](https://semver.org/lang/es/).
 
+## [No publicado]
+
+### Añadido
+
+- `tareas historial`: muestra los últimos lotes de operaciones con su fecha,
+  la orden que los produjo y si se pueden deshacer. Se guarda en
+  `historial.jsonl`, junto a los ajustes, y las simulaciones no se apuntan.
+- `tareas deshacer`: revierte el último lote. Devuelve a su sitio los ficheros
+  movidos, renombrados u organizados y manda a la papelera las copias y los
+  ficheros creados (`imagenes --comprimir`, `resumir`). Avisa de lo que no se
+  puede revertir (`capturas`, `temporales`, `borrar`) sin perder el lote.
+  Con `--simular` enseña qué haría sin tocar nada. Guarda rutas absolutas, así
+  que funciona aunque se lance desde otra carpeta.
+
+### Cambiado
+
+- `mover`, `organizar`, `capturas`, `temporales`, `imagenes` y `ejecutar`
+  apuntan automáticamente sus operaciones en el historial.
+
 ## [1.1.0] - 2026-11-20
 
 ### Añadido

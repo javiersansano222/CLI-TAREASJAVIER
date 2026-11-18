@@ -181,7 +181,9 @@ Cierra y abre PowerShell. Si sigue sin aparecer, añade esta carpeta al PATH:
 ### Si `tareas` no se reconoce en Linux o macOS
 
 El instalador se ejecuta en una subshell, así que no puede cambiar el PATH de
-tu terminal. Estos pasos van en orden: para en cuanto `tareas` responda.
+tu terminal. Estos pasos van en orden: para en cuanto `tareas` responda. Si el
+instalador detecta el problema, ya te muestra al final las dos líneas del
+paso 3.
 
 **1. Comprueba si el ejecutable está instalado:**
 

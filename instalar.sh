@@ -15,6 +15,9 @@ set -euo pipefail
 REPO="https://github.com/javiersansano222/CLI-TAREASJAVIER"
 CRUDO="https://raw.githubusercontent.com/javiersansano222/CLI-TAREASJAVIER/main"
 BIN="$HOME/.local/bin"
+# El PATH de antes de tocar nada: sirve para saber si la terminal actual ya
+# conocía la carpeta o si el script la ha añadido solo para sí mismo.
+PATH_ORIGINAL="$PATH"
 
 paso() { printf '\n[%s] %s\n' "$1" "$2"; }
 
@@ -76,6 +79,31 @@ fi
 "$BIN/tareas" version
 "$BIN/tareas" --config "$HOME/acciones.json" validar || \
     echo "      Aviso: el acciones.json de tu home no valida; mira el mensaje de arriba."
+
+# Este script corre en una subshell: su «export PATH» no se queda en la
+# terminal del usuario. Si la carpeta no estaba ya en el PATH y ningún fichero
+# de configuración del shell la añade, la próxima terminal tampoco la verá.
+shell_conoce_bin() {
+    case ":$PATH_ORIGINAL:" in
+        *":$BIN:"*) return 0 ;;
+    esac
+    for fichero in "$HOME/.bashrc" "$HOME/.bash_profile" "$HOME/.profile" \
+                   "$HOME/.zshrc" "$HOME/.zprofile"; do
+        if [ -f "$fichero" ] && grep -q '\.local/bin' "$fichero" 2>/dev/null; then
+            return 0
+        fi
+    done
+    return 1
+}
+
+if ! shell_conoce_bin; then
+    printf '\nAviso: tu terminal todavía no sabe dónde está «tareas».\n'
+    printf 'El instalador corre en una subshell, así que su PATH no se queda.\n'
+    printf 'Arréglalo para siempre y abre después una terminal nueva:\n\n'
+    printf '    echo '\''. "$HOME/.local/bin/env"'\'' >> ~/.bashrc\n'
+    printf '    source ~/.bashrc\n\n'
+    printf 'En zsh (el shell por defecto de macOS), cambia ~/.bashrc por ~/.zshrc.\n'
+fi
 
 printf '\nListo. Abre una terminal NUEVA y escribe:\n'
 printf '    tareas --help\n'

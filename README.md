@@ -51,6 +51,9 @@ Al terminar, **cierra y vuelve a abrir la terminal** y escribe
 clave: sin ella las órdenes de IA salen con código 4. Para actualizar,
 vuelve a lanzar la misma línea.
 
+Si al abrirla `tareas` sigue sin reconocerse, salta a
+[«Si `tareas` no se reconoce en Linux o macOS»](#si-tareas-no-se-reconoce-en-linux-o-macos).
+
 Si prefieres verlo antes de ejecutarlo:
 
 ```powershell
@@ -173,6 +176,58 @@ Cierra y abre PowerShell. Si sigue sin aparecer, añade esta carpeta al PATH:
 
 ```text
 %USERPROFILE%\.local\bin
+```
+
+### Si `tareas` no se reconoce en Linux o macOS
+
+El instalador se ejecuta en una subshell, así que no puede cambiar el PATH de
+tu terminal. Estos pasos van en orden: para en cuanto `tareas` responda.
+
+**1. Comprueba si el ejecutable está instalado:**
+
+```bash
+ls -l ~/.local/bin/tareas
+```
+
+Si dice «No such file or directory», salta al paso 5.
+
+**2. Pruébalo con la ruta completa:**
+
+```bash
+~/.local/bin/tareas version
+```
+
+- Si responde `tareas 1.1.0`, el programa está bien y solo falta el PATH: paso 3.
+- Si dice «Permission denied»: paso 4.
+
+**3. Añade `~/.local/bin` al PATH para siempre:**
+
+```bash
+echo '. "$HOME/.local/bin/env"' >> ~/.bashrc
+source ~/.bashrc
+command -v tareas
+```
+
+En zsh, cambia `~/.bashrc` por `~/.zshrc`. Después abre una terminal nueva (una
+pestaña también sirve: arranca un shell que lee ese fichero) y comprueba:
+
+```bash
+tareas version
+```
+
+`uv tool update-shell` hace lo mismo en muchos equipos; si esa orden no cambia
+nada, usa las dos líneas de arriba.
+
+**4. Si aparece «Permission denied»:**
+
+```bash
+chmod +x ~/.local/bin/tareas ~/.local/bin/hola
+```
+
+**5. Si el fichero no existe, reinstala y vuelve al paso 1:**
+
+```bash
+uv tool install git+https://github.com/javiersansano222/CLI-TAREASJAVIER --force
 ```
 
 ### Rutas de acciones en Windows y macOS

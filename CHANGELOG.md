@@ -22,6 +22,10 @@ Todos los cambios que notará quien USA la herramienta. Formato:
 
 - `mover`, `organizar`, `capturas`, `temporales`, `imagenes` y `ejecutar`
   apuntan automáticamente sus operaciones en el historial.
+- README: la instalación «Solo para usar la terminal» va paso a paso (instalar
+  `curl` si falta, instalar `uv`, cargarlo con `source ~/.local/bin/env`,
+  instalar desde el `.tar.gz` sin necesitar `git` y dejarlo en el PATH), con el
+  caso de Windows aparte.
 
 ## [1.1.0] - 2026-11-20
 

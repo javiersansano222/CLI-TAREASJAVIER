@@ -89,21 +89,76 @@ instaladores oficiales.
 
 ### Solo para usar la terminal
 
-Si no vas a modificar el código, instala la última versión de `main` desde
-GitHub con **una orden**:
+Para usar `tareas` sin tocar el código. Hace falta conexión a internet y **no
+hace falta `git`**. Todo se instala en tu carpeta personal; el único paso que
+puede pedir contraseña es instalar `curl` si no viene de serie.
+
+**1. Instala `uv`**, el gestor que baja Python y la herramienta:
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+Si dice `curl: command not found`:
+
+```bash
+sudo apt update && sudo apt install -y curl     # Ubuntu, Debian, Lliurex
+```
+
+En macOS `curl` ya viene instalado. En Windows, usa `winget install --id
+astral-sh.uv -e` y sigue desde el paso 3.
+
+**2. Carga `uv` en esta terminal.** El instalador corre en una subshell, así que
+su PATH no se queda en tu ventana: hay que cargarlo a mano una vez.
+
+```bash
+source ~/.local/bin/env
+uv --version
+```
+
+**3. Instala Python y la última versión de `main`:**
 
 ```bash
 uv python install 3.12
-uv tool install git+https://github.com/javiersansano222/CLI-TAREASJAVIER
-uv tool update-shell   # si «tareas» no aparece en el PATH
-# cierra y abre una terminal nueva
-tareas --help
-tareas version         # debe decir: tareas 1.1.0
+uv tool install https://github.com/javiersansano222/CLI-TAREASJAVIER/archive/refs/heads/main.tar.gz --force
 ```
 
-Sin etiqueta se instala siempre lo último de `main`. Si quieres congelar una
-versión concreta, añade su etiqueta: `@v1.0.0` sigue disponible y así siempre
-instala exactamente esa.
+El `.tar.gz` evita depender de `git`. Si lo tienes y lo prefieres, esta orden
+hace lo mismo:
+
+```bash
+uv tool install git+https://github.com/javiersansano222/CLI-TAREASJAVIER --force
+```
+
+**4. Comprueba que funciona:**
+
+```bash
+tareas version
+tareas --help | grep -E "historial|deshacer|mover|organizar"
+```
+
+`version` dice `1.1.0` en toda esta entrega, así que la segunda orden es la que
+confirma que tienes las órdenes más recientes.
+
+**5. Para que `uv` y `tareas` sigan ahí en la próxima terminal** (solo una vez):
+
+```bash
+echo '. "$HOME/.local/bin/env"' >> ~/.bashrc
+source ~/.bashrc
+```
+
+En zsh (el shell por defecto de macOS) usa `~/.zshrc`. En Windows este paso no
+hace falta: `winget` ya deja `uv` en el PATH y `uv tool update-shell` hace lo
+mismo con `tareas`. Si al abrir otra terminal `tareas` sigue sin reconocerse, mira
+[«Si `tareas` no se reconoce en Linux o macOS»](#si-tareas-no-se-reconoce-en-linux-o-macos).
+
+Para **actualizar** más adelante, repite el paso 3: el `--force` reemplaza la
+versión instalada. Para **congelar** una versión concreta, usa su etiqueta:
+
+```bash
+uv tool install https://github.com/javiersansano222/CLI-TAREASJAVIER/archive/refs/tags/v1.0.0.tar.gz --force
+uv tool install git+https://github.com/javiersansano222/CLI-TAREASJAVIER@v1.0.0 --force
+```
 
 ### Primeros pasos
 
@@ -191,7 +246,8 @@ paso 3.
 ls -l ~/.local/bin/tareas
 ```
 
-Si dice «No such file or directory», salta al paso 5.
+Si dice «No such file or directory», salta al paso 5. Si tampoco existe
+`~/.local/bin/uv`, lo que falta es `uv`: vuelve a «Solo para usar la terminal».
 
 **2. Pruébalo con la ruta completa:**
 
@@ -229,8 +285,11 @@ chmod +x ~/.local/bin/tareas ~/.local/bin/hola
 **5. Si el fichero no existe, reinstala y vuelve al paso 1:**
 
 ```bash
-uv tool install git+https://github.com/javiersansano222/CLI-TAREASJAVIER --force
+uv tool install https://github.com/javiersansano222/CLI-TAREASJAVIER/archive/refs/heads/main.tar.gz --force
 ```
+
+Si tienes `git`, `uv tool install git+https://github.com/javiersansano222/CLI-TAREASJAVIER --force`
+hace lo mismo.
 
 ### Rutas de acciones en Windows y macOS
 

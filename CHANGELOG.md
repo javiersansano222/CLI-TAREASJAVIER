@@ -30,10 +30,14 @@ Todos los cambios que notará quien USA la herramienta. Formato:
   bloque «Empieza por aquí» con los atajos `1`, `2` y `3`, categorías
   generadas desde Typer (con **OTRAS** para las órdenes nuevas), seguridad e
   IA en una línea y un consejo en lugar de la cita. Cabe en una pantalla y ya
-  no repite la lista de órdenes.
+  no repite la lista de órdenes. En pantallas anchas los paneles no pasan de 84
+  columnas, y por debajo de 80 se muestra una línea por categoría.
 
 ### Corregido
 
+- README: aviso de que, si `tareas` se instaló desde la carpeta del repositorio
+  sin `--editable`, los cambios de código no se ven hasta
+  `uv tool install --reinstall .`.
 - `instalar.ps1` se guarda sin BOM y en ASCII puro: `irm … | iex` ya no falla
   en la primera línea y `-File` funciona igual en PowerShell 5.1 y 7. Al
   terminar recuerda cómo usar `tareas` en la ventana actual y que hay que

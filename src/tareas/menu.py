@@ -187,9 +187,19 @@ def _ejecutar(app: typer.Typer, partes: list[str]) -> None:
         pass
 
 
+# Los paneles no se estiran más allá de este ancho: en una terminal de 120
+# columnas quedaban cajas larguísimas con medio panel vacío.
+ANCHO_MAXIMO = 84
+
+
 def _caja() -> box.Box:
     """Cajas con esquinas redondeadas, o ASCII si el terminal es antiguo."""
     return box.ASCII if getattr(consola, "legacy_windows", False) else box.ROUNDED
+
+
+def _ancho_util() -> int:
+    """Ancho del panel: el de la terminal, sin pasar de ANCHO_MAXIMO."""
+    return min(consola.width or 80, ANCHO_MAXIMO)
 
 
 def _descripcion_corta(nombre: str, descripcion: str) -> str:
@@ -237,7 +247,9 @@ def _bloque_categoria(
     """Título de categoría, una raya y sus órdenes con la descripción al lado."""
     tabla = Table.grid(padding=(0, 1))
     tabla.add_column(style="bold white", no_wrap=True)
-    tabla.add_column(style="dim")
+    # `fold` en vez de recortar con «…»: si una descripción larga no cabe
+    # (órdenes sin clasificar), baja de línea en lugar de perderse.
+    tabla.add_column(style="dim", overflow="fold")
     for comando, descripcion in filas:
         tabla.add_row(comando, descripcion)
     return Group(
@@ -255,6 +267,7 @@ def _pintar_cabecera(color: str) -> None:
             border_style=color,
             box=_caja(),
             padding=(0, 1),
+            width=_ancho_util(),
         )
     )
 
@@ -273,6 +286,7 @@ def _pintar_empieza(color: str) -> None:
             border_style=color,
             box=_caja(),
             padding=(0, 1),
+            width=_ancho_util(),
         )
     )
 
@@ -282,9 +296,10 @@ def _pintar_categorias(app: typer.Typer, color: str) -> None:
     if not datos:
         return
 
-    ancho = consola.width or 80
-    if ancho < 70:
-        # Terminal estrecha: una línea por categoría, sin descripciones.
+    ancho = _ancho_util()
+    if ancho < 80:
+        # Terminal estrecha: una línea por categoría, sin descripciones. Con dos
+        # bloques la tercera categoría bajaba de línea y el menú no cabía.
         for nombre, filas in datos:
             consola.print(Text(nombre, style=f"bold {color}"))
             consola.print(
@@ -292,10 +307,13 @@ def _pintar_categorias(app: typer.Typer, color: str) -> None:
             )
         return
 
-    columnas = 3 if ancho >= 80 else 2
-    tabla = Table.grid(expand=True, padding=(0, 2))
+    columnas = 3
+    # Ancho fijo por columna: así los bloques no se separan en pantallas anchas.
+    # 25 es lo que necesita el bloque más ancho («mirar-espacio diagnostica»).
+    ancho_columna = max(25, ancho // columnas - 2)
+    tabla = Table.grid(padding=(0, 2))
     for _ in range(columnas):
-        tabla.add_column()
+        tabla.add_column(width=ancho_columna)
     bloques: list[Any] = [
         _bloque_categoria(nombre, filas, color) for nombre, filas in datos
     ]

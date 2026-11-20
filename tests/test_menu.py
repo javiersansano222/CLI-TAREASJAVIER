@@ -114,3 +114,19 @@ def test_anchos_estrechos_no_rompen_el_menu(monkeypatch):
 
     assert "Empieza por aquí" in texto
     assert "escribe una orden" in texto
+    assert len(texto.splitlines()) <= 26
+
+
+def test_a_72_columnas_tambien_cabe(monkeypatch):
+    texto = _texto(monkeypatch, ancho=72)
+
+    assert "ARCHIVOS" in texto
+    assert "escribe una orden" in texto
+    assert len(texto.splitlines()) <= 26
+
+
+def test_en_pantallas_anchas_no_se_estira_del_todo(monkeypatch):
+    texto = _texto(monkeypatch, ancho=120)
+
+    for linea in texto.splitlines():
+        assert len(linea) <= menu.ANCHO_MAXIMO, linea

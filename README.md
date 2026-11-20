@@ -221,6 +221,18 @@ Si cambia una dependencia y aparece `ModuleNotFoundError`, reinstala con
 `--force`; `uv sync` actualiza el proyecto, pero no el entorno global de la
 herramienta. Después de `uv tool update-shell`, cierra y abre la terminal.
 
+Si instalaste desde la carpeta del repositorio **sin** `--editable` (por
+ejemplo `uv tool install .`), la herramienta se queda con una copia del código
+en `...\uv\tools\tareas\`: los cambios que hagas en el repositorio no se ven
+hasta reinstalar. Para refrescarla:
+
+```bash
+uv tool install --reinstall .
+```
+
+Con `uv tool install --editable .` no hace falta: `tareas` lee siempre el
+código del repositorio.
+
 ### Si `tareas` no se reconoce en Windows
 
 El instalador de una línea corre en un PowerShell hijo, así que el PATH que

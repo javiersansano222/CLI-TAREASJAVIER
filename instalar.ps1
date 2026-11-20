@@ -1,6 +1,6 @@
-﻿# instalar.ps1 — instala la CLI «tareas» desde GitHub en Windows.
+# instalar.ps1 - instala la CLI "tareas" desde GitHub en Windows.
 #
-# Uso en una sola línea (PowerShell):
+# Uso en una sola linea (PowerShell):
 #   powershell -c "irm https://raw.githubusercontent.com/javiersansano222/CLI-TAREASJAVIER/main/instalar.ps1 | iex"
 #
 # O desde una copia del repo:
@@ -8,7 +8,10 @@
 #
 # Lo que toca: la carpeta de herramientas de uv (~\.local\bin), el PATH de
 # usuario (uv tool update-shell) y, solo si faltan, .env y acciones.json en tu
-# carpeta de inicio. Nunca pisa un .env que ya exista ni tu código.
+# carpeta de inicio. Nunca pisa un .env que ya exista ni tu codigo.
+#
+# Este fichero va en ASCII y sin BOM a proposito: asi funciona igual con
+# "irm | iex" y con "-File" en PowerShell 5.1 y en PowerShell 7.
 
 function Instalar-Tareas {
 
@@ -31,12 +34,12 @@ function Instalar-Tareas {
 
     Write-Host "[1/6] Comprobando uv (el gestor de paquetes)..." -ForegroundColor Cyan
     if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
-        Write-Host "      uv no está: lo instalo desde astral.sh"
+        Write-Host "      uv no esta: lo instalo desde astral.sh"
         try { Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force } catch { }
         $instalador = Join-Path $env:TEMP 'uv-instalar.ps1'
         Bajar 'https://astral.sh/uv/install.ps1' $instalador
         & powershell -NoProfile -ExecutionPolicy Bypass -File $instalador
-        if ($LASTEXITCODE -ne 0) { throw "la instalación de uv ha fallado" }
+        if ($LASTEXITCODE -ne 0) { throw "la instalacion de uv ha fallado" }
         Remove-Item $instalador -ErrorAction SilentlyContinue
         if ($env:Path -notlike "*$bin*") { $env:Path = "$bin;$env:Path" }
     }
@@ -56,17 +59,17 @@ function Instalar-Tareas {
     & uv tool update-shell
     if ($env:Path -notlike "*$bin*") { $env:Path = "$bin;$env:Path" }
 
-    Write-Host "[5/6] Ficheros de configuración en $HOME..." -ForegroundColor Cyan
+    Write-Host "[5/6] Ficheros de configuracion en $HOME..." -ForegroundColor Cyan
     $rutaEnv = Join-Path $HOME '.env'
     if (Test-Path $rutaEnv) {
-        Write-Host "      .env ya existía: no lo toco."
+        Write-Host "      .env ya existia: no lo toco."
     } else {
         Bajar "$crudo/.env.example" $rutaEnv
-        Write-Host "      He creado .env con la plantilla: rellénalo con tu clave."
+        Write-Host "      He creado .env con la plantilla: rellenalo con tu clave."
     }
     $rutaAcciones = Join-Path $HOME 'acciones.json'
     if (Test-Path $rutaAcciones) {
-        Write-Host "      acciones.json ya existía: no lo toco."
+        Write-Host "      acciones.json ya existia: no lo toco."
     } else {
         Bajar "$crudo/acciones-win.json" $rutaAcciones
         Write-Host "      He creado acciones.json con las rutas de Windows."
@@ -74,16 +77,18 @@ function Instalar-Tareas {
 
     Write-Host "[6/6] Creando la carpeta de pruebas de la IA..." -ForegroundColor Cyan
     $pruebas = Join-Path $HOME 'pruebas-tareas'
-    foreach ($carpeta in 'Apuntes', 'Resúmenes', 'Clasificados') {
+    # El nombre lleva tilde y el fichero es ASCII: se construye con su codigo.
+    $resumenes = 'Res' + [char]0xFA + 'menes'
+    foreach ($carpeta in 'Apuntes', $resumenes, 'Clasificados') {
         New-Item -ItemType Directory -Force -Path (Join-Path $pruebas $carpeta) | Out-Null
     }
     Write-Host "      $pruebas"
 
-    # Comprobación con la ruta completa: el PATH de esta sesión puede estar viejo
+    # Comprobacion con la ruta completa: el PATH de esta sesion puede estar viejo
     $tareas = Join-Path $bin 'tareas.exe'
     if (-not (Test-Path $tareas)) { throw "no encuentro el ejecutable en $tareas" }
     & $tareas version
-    if ($LASTEXITCODE -ne 0) { throw "tareas no arranca (código $LASTEXITCODE)" }
+    if ($LASTEXITCODE -ne 0) { throw "tareas no arranca (codigo $LASTEXITCODE)" }
     & $tareas --config $rutaAcciones validar
     if ($LASTEXITCODE -ne 0) {
         Write-Host "      Aviso: el acciones.json de tu home no valida; mira el mensaje de arriba." -ForegroundColor Yellow
@@ -93,9 +98,28 @@ function Instalar-Tareas {
     Write-Host "Listo. Abre una terminal NUEVA y escribe:" -ForegroundColor Green
     Write-Host "    tareas --help"
     Write-Host "    hola"
+    Write-Host "    tareas version"
     Write-Host "    tareas validar"
     Write-Host ""
-    Write-Host "Si no has rellenado .env, las órdenes de IA salen con código 4."
+
+    # El PATH de usuario puede estar bien y esta ventana no enterarse: el
+    # instalador de una linea corre en un PowerShell hijo y Windows Terminal
+    # hereda el entorno de la ventana que ya estaba abierta.
+    $pathUsuario = [Environment]::GetEnvironmentVariable('Path', 'User')
+    if ($pathUsuario -notlike "*$bin*") {
+        Write-Host "Aviso: $bin no esta en el PATH de usuario." -ForegroundColor Yellow
+        Write-Host 'Anadelo con esta orden y vuelve a abrir la terminal:'
+        Write-Host ('    [Environment]::SetEnvironmentVariable("Path", "' + $bin + ';" + [Environment]::GetEnvironmentVariable("Path","User"), "User")')
+        Write-Host ""
+    }
+
+    Write-Host "Si tienes prisa, puedes usarlo ya en esta ventana con:"
+    Write-Host '    $env:Path = "$env:USERPROFILE\.local\bin;$env:Path"'
+    Write-Host '    tareas version'
+    Write-Host ""
+    Write-Host "Si al abrir otra ventana sigue sin reconocerse, cierra TODAS las"
+    Write-Host "ventanas de la terminal (no solo la pestana) o reinicia la sesion."
+    Write-Host "Si no has rellenado .env, las ordenes de IA salen con codigo 4."
 }
 
 Instalar-Tareas

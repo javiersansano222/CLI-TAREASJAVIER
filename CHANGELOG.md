@@ -27,6 +27,16 @@ Todos los cambios que notará quien USA la herramienta. Formato:
   instalar desde el `.tar.gz` sin necesitar `git` y dejarlo en el PATH), con el
   caso de Windows aparte.
 
+### Corregido
+
+- `instalar.ps1` se guarda sin BOM y en ASCII puro: `irm … | iex` ya no falla
+  en la primera línea y `-File` funciona igual en PowerShell 5.1 y 7. Al
+  terminar recuerda cómo usar `tareas` en la ventana actual y que hay que
+  cerrar todas las ventanas tras cambiar el PATH.
+- README: la solución de Windows explica el PATH paso a paso (`Test-Path`,
+  `$env:Path`, `uv tool update-shell` y cerrar todas las ventanas), y aclara
+  que la orden es `tareas version`.
+
 ## [1.1.0] - 2026-11-20
 
 ### Añadido

@@ -223,15 +223,49 @@ herramienta. Después de `uv tool update-shell`, cierra y abre la terminal.
 
 ### Si `tareas` no se reconoce en Windows
 
+El instalador de una línea corre en un PowerShell hijo, así que el PATH que
+prepara no se queda en tu ventana. Estos pasos van en orden: para en cuanto
+`tareas version` responda.
+
+**1. Comprueba que el ejecutable está instalado:**
+
+```powershell
+Test-Path "$env:USERPROFILE\.local\bin\tareas.exe"
+```
+
+Si dice `False`, reinstala con:
+
+```powershell
+uv tool install https://github.com/javiersansano222/CLI-TAREASJAVIER/archive/refs/heads/main.tar.gz --force
+```
+
+**2. Úsalo ya en esta ventana** (solo dura hasta cerrarla):
+
+```powershell
+$env:Path = "$env:USERPROFILE\.local\bin;$env:Path"
+tareas version
+```
+
+**3. Déjalo en el PATH de usuario:**
+
 ```powershell
 uv tool update-shell
 ```
 
-Cierra y abre PowerShell. Si sigue sin aparecer, añade esta carpeta al PATH:
+Si `uv` tampoco se reconoce, usa la ruta completa:
+`& "$env:USERPROFILE\.local\bin\uv.exe" tool update-shell`.
+
+**4. Cierra TODAS las ventanas de la terminal**, no solo la pestaña: en Windows
+Terminal, las pestañas nuevas heredan el entorno de la ventana que ya estaba
+abierta. Si sigue igual, cierra sesión y vuelve a entrar.
+
+La carpeta que debe estar en el PATH es:
 
 ```text
 %USERPROFILE%\.local\bin
 ```
+
+Y ojo: la orden es `tareas version`, no `tareas --version`.
 
 ### Si `tareas` no se reconoce en Linux o macOS
 

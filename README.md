@@ -513,25 +513,53 @@ red del centro).
 
 ## Menú interactivo
 
-Al escribir `tareas` sin argumentos se abre un menú con todas las órdenes
-disponibles. Desde ahí se escribe la orden igual que en la terminal:
+Al escribir `tareas` sin argumentos se abre un **panel de mando** pensado para
+caber en una pantalla. Arriba están los tres primeros pasos; debajo, las
+órdenes agrupadas por lo que quieres hacer; al final, un consejo:
 
 ```text
-tareas> version
-tareas> hola
-tareas> cambio
+╭─ tareas 1.1.0 ─────────────────────────────────────────────╮
+│ Ordena, limpia y entiende tus ficheros sin miedo.          │
+╰────────────────────────────────────────────────────────────╯
+
+╭─ Empieza por aquí ─────────────────────────────────────────╮
+│ 1  informe              Ver Descargas (solo lectura)       │
+│ 2  organizar --simular  Ordenar sin tocar nada             │
+│ 3  historial            Ver lo último (y deshacer)         │
+╰────────────────────────────────────────────────────────────╯
+
+  ARCHIVOS              SISTEMA                APRENDER
+  ───────────────       ───────────────        ───────────────
+  organizar  ordena     doctor    diagnostica  chuleta  Git/Linux
+  mover      traslada   sistema   disco/RAM    tema     colores
+  capturas   limpia     mirar-espacio  mide    cambio   menú
+  temporales limpia     informe   resumen      hola     bienvenida
+  imagenes   comprime   validar   acciones     cita     frase
+  listar     muestra    ejecutar  lanza
+
+  SEGURIDAD  historial · deshacer
+  IA  comprobar-ia · ia sugerir · ia explicar
+
+  Consejo: prueba --simular primero; no toca nada
+  escribe una orden · ayuda · salir
+```
+
+Los números `1`, `2` y `3` ejecutan el ejemplo correspondiente. También se
+puede escribir la orden completa, con sus opciones:
+
+```text
+tareas> 2
 tareas> capturas --simular
-tareas> temporales --simular
 tareas> informe --top 3
-tareas> imagenes --comprimir --simular
 tareas> organizar ~/pruebas-tareas/mezcla --simular
 tareas> mover ~/Descargas/apuntes.pdf ~/Documentos --simular
 tareas> salir
 ```
 
-También se pueden usar `ayuda` o `?` para ver la ayuda, y `salir`, `exit`,
-`quit` o `q` para terminar. El menú lee las órdenes registradas en Typer, así
-que las que se añadan en el futuro aparecen automáticamente.
+`ayuda` o `?` abre la ayuda completa; `salir`, `exit`, `quit` o `q` termina.
+Las categorías se generan desde las órdenes registradas en Typer: una orden
+nueva que no esté clasificada aparece en **OTRAS**, nunca desaparece. La cita
+motivacional ya no ocupa el inicio; sigue disponible con `tareas cita`.
 
 ## Cambiar el color del menú
 
@@ -1028,13 +1056,16 @@ en su historial**. Así se garantiza y así se comprueba:
 
 ## Estado del menú interactivo
 
-- `tareas` sin argumentos abre el menú; `tareas --help` sigue mostrando la ayuda.
-- Desde el menú funcionan `version`, `hola`, `cambio`, `listar`, `capturas`, `informe`, `chuleta`, `sistema`, `validar`, `acciones`, `ejecutar` y `doctor`.
-- `cambio` pone el menú en rojo y vuelve a pintarlo; `cambio normal` lo restaura.
+- `tareas` sin argumentos abre el panel de mando; `tareas --help` sigue mostrando la ayuda completa.
+- El panel cabe en 80×24: cabecera con la versión, «Empieza por aquí» (`1`-`3`), categorías, seguridad/IA y un consejo.
+- `1`, `2` y `3` ejecutan `informe`, `organizar --simular` e `historial`.
+- Las categorías se generan desde Typer; una orden nueva sin clasificar aparece en **OTRAS**.
+- `cambio` recolorea títulos, rayas y bordes; `cambio normal` lo restaura.
 - `salir`, `exit`, `quit` y `q` cierran el menú; `ayuda` y `?` muestran la ayuda.
 - También acepta el prefijo `tareas`, por ejemplo `tareas version`.
 - Las órdenes nuevas aparecen en el menú automáticamente.
 - Probado con entrada por tubería (`printf 'version\nsalir\n' | tareas`) y sin entrada.
+- `tests/test_menu.py` comprueba anchos de 60, 80 y 120, los atajos, las categorías y que ninguna orden se repita.
 
 ## Estado de la semana 2
 

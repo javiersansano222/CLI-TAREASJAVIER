@@ -26,6 +26,11 @@ Todos los cambios que notará quien USA la herramienta. Formato:
   `curl` si falta, instalar `uv`, cargarlo con `source ~/.local/bin/env`,
   instalar desde el `.tar.gz` sin necesitar `git` y dejarlo en el PATH), con el
   caso de Windows aparte.
+- El menú de inicio es ahora un panel de mando: cabecera con la versión,
+  bloque «Empieza por aquí» con los atajos `1`, `2` y `3`, categorías
+  generadas desde Typer (con **OTRAS** para las órdenes nuevas), seguridad e
+  IA en una línea y un consejo en lugar de la cita. Cabe en una pantalla y ya
+  no repite la lista de órdenes.
 
 ### Corregido
 

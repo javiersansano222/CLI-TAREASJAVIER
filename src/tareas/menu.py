@@ -8,9 +8,13 @@ import sys
 from typing import Any
 
 import typer
-from rich.console import Console
+from rich import box
+from rich.console import Console, Group
 from rich.panel import Panel
 from rich.table import Table
+from rich.text import Text
+
+from tareas import __version__
 
 consola = Console()
 
@@ -25,6 +29,90 @@ COLORES = {
 }
 _color_actual = "bright_cyan"
 _menu_activo = False
+
+# Órdenes agrupadas por lo que el usuario quiere hacer, no por orden alfabético.
+# Si una orden nueva no aparece aquí, cae en «OTRAS»: nunca desaparece del menú.
+CATEGORIAS: dict[str, tuple[str, ...]] = {
+    "ARCHIVOS": (
+        "organizar",
+        "mover",
+        "capturas",
+        "temporales",
+        "imagenes",
+        "listar",
+    ),
+    "SISTEMA": (
+        "doctor",
+        "sistema",
+        "mirar-espacio",
+        "informe",
+        "validar",
+        "acciones",
+        "ejecutar",
+    ),
+    "APRENDER": (
+        "chuleta",
+        "tema",
+        "cambio",
+        "hola",
+        "cita",
+    ),
+}
+
+# Estas dos van en una línea aparte, más compacta, para no llenar la pantalla.
+EXTRAS: dict[str, tuple[str, ...]] = {
+    "SEGURIDAD": ("historial", "deshacer"),
+    "IA": ("comprobar-ia", "ia sugerir", "ia explicar"),
+}
+
+EJEMPLOS: tuple[tuple[str, str, str], ...] = (
+    ("1", "informe", "Ver Descargas (solo lectura)"),
+    ("2", "organizar --simular", "Ordenar sin tocar nada"),
+    ("3", "historial", "Ver lo último (y deshacer)"),
+)
+
+# Los números del bloque «Empieza por aquí» también ejecutan la orden.
+ATAJOS_INICIO: dict[str, tuple[str, ...]] = {
+    "1": ("informe",),
+    "2": ("organizar", "--simular"),
+    "3": ("historial",),
+}
+
+CONSEJOS: tuple[str, ...] = (
+    "prueba --simular primero; no toca nada",
+    "historial enseña lo último; deshacer lo revierte",
+    "capturas y temporales usan la papelera, no borran para siempre",
+    "mover nunca sobrescribe: crea «nombre (1)»",
+    "edita acciones.json y compruébalo con validar",
+    "si algo no funciona, doctor revisa el entorno",
+)
+
+# Descripciones de una o dos palabras para que el menú quepa de una vez.
+DESCRIPCIONES_CORTAS: dict[str, str] = {
+    "organizar": "ordena",
+    "mover": "traslada",
+    "capturas": "limpia",
+    "temporales": "limpia",
+    "imagenes": "comprime",
+    "listar": "muestra",
+    "doctor": "diagnostica",
+    "sistema": "disco/RAM",
+    "mirar-espacio": "mide",
+    "informe": "resumen",
+    "validar": "revisa",
+    "acciones": "lista",
+    "ejecutar": "lanza",
+    "chuleta": "Git/Linux",
+    "tema": "colores",
+    "cambio": "menú",
+    "hola": "bienvenida",
+    "cita": "frase",
+    "historial": "lotes",
+    "deshacer": "revierte",
+    "comprobar-ia": "prueba",
+    "ia sugerir": "propone",
+    "ia explicar": "explica",
+}
 
 
 def color_actual() -> str:
@@ -99,71 +187,152 @@ def _ejecutar(app: typer.Typer, partes: list[str]) -> None:
         pass
 
 
-def _pintar_menu(app: typer.Typer) -> None:
-    color = color_actual()
+def _caja() -> box.Box:
+    """Cajas con esquinas redondeadas, o ASCII si el terminal es antiguo."""
+    return box.ASCII if getattr(consola, "legacy_windows", False) else box.ROUNDED
+
+
+def _descripcion_corta(nombre: str, descripcion: str) -> str:
+    """Versión de una o dos palabras de la ayuda, para que quepa en el panel."""
+    corta = DESCRIPCIONES_CORTAS.get(nombre)
+    if corta:
+        return corta
+    texto = " ".join(descripcion.split()).split(".")[0]
+    return texto if len(texto) <= 24 else texto[:23] + "…"
+
+
+def _datos_categorias(app: typer.Typer) -> list[tuple[str, list[tuple[str, str]]]]:
+    """Agrupa las órdenes reales de Typer; las nuevas caen en «OTRAS»."""
+    disponibles = dict(_ordenes_menu(app))
+    usadas = {"version", "ia"}
+    datos: list[tuple[str, list[tuple[str, str]]]] = []
+
+    for nombre, comandos in CATEGORIAS.items():
+        filas = [
+            (comando, _descripcion_corta(comando, disponibles[comando]))
+            for comando in comandos
+            if comando in disponibles
+        ]
+        usadas.update(comando for comando, _ in filas)
+        if filas:
+            datos.append((nombre, filas))
+
+    for comandos in EXTRAS.values():
+        usadas.update(comandos)
+
+    otras = [
+        (nombre, _descripcion_corta(nombre, descripcion))
+        for nombre, descripcion in disponibles.items()
+        if nombre not in usadas
+    ]
+    if otras:
+        datos.append(("OTRAS", otras))
+
+    return datos
+
+
+def _bloque_categoria(
+    nombre: str, filas: list[tuple[str, str]], color: str
+) -> Group:
+    """Título de categoría, una raya y sus órdenes con la descripción al lado."""
+    tabla = Table.grid(padding=(0, 1))
+    tabla.add_column(style="bold white", no_wrap=True)
+    tabla.add_column(style="dim")
+    for comando, descripcion in filas:
+        tabla.add_row(comando, descripcion)
+    return Group(
+        Text(nombre, style=f"bold {color}"),
+        Text("─" * len(nombre), style=color),
+        tabla,
+    )
+
+
+def _pintar_cabecera(color: str) -> None:
     consola.print(
-        Panel.fit(
-            f"[bold {color}]Menú de tareas[/bold {color}]\n"
-            "Escribe una orden y sus opciones, por ejemplo:\n"
-            f"  [{color}]capturas --simular[/{color}]\n"
-            f"  [{color}]informe --top 3[/{color}]\n"
-            f"  [{color}]salir[/{color}] para terminar\n"
-            f"  [{color}]hola[/{color}] para ver el banner de bienvenida",
+        Panel(
+            Text("Ordena, limpia y entiende tus ficheros sin miedo.", style="white"),
+            title=Text(f"tareas {__version__}", style=f"bold {color}"),
             border_style=color,
+            box=_caja(),
+            padding=(0, 1),
         )
     )
 
-    # Mostrar una guía rápida con los comandos más importantes
-    guia_rapida = Table(
-        title="Guía rápida de comandos",
-        title_style=f"bold {color}",
-        header_style=f"bold {color}",
-    )
-    guia_rapida.add_column("Comando", style="bold")
-    guia_rapida.add_column("Descripción")
-    
-    comandos_guia = [
-        ("hola", "Muestra el banner de bienvenida ASCII"),
-        ("chuleta", "Muestra una chuleta rápida de Git y comandos de Linux"),
-        ("sistema", "Muestra el tamaño del disco y la memoria en uso"),
-        ("doctor", "Diagnostica el entorno de la herramienta"),
-        ("mirar-espacio", "Muestra el espacio y el número de ficheros de una carpeta"),
-        ("capturas", "Envía a la papelera las capturas antiguas"),
-        ("temporales", "Envía a la papelera los temporales antiguos"),
-        ("organizar", "Ordena los ficheros de una carpeta por tipo"),
-        ("mover <archivo> <carpeta>", "Mueve un fichero concreto a otra carpeta"),
-        ("historial", "Muestra las últimas operaciones y si se pueden deshacer"),
-        ("deshacer --simular", "Revierte el último lote (simulado)"),
-        ("listar", "Lista los ficheros de una carpeta en una tabla"),
-        ("informe", "Muestra un resumen de la carpeta de descargas"),
-        ("imagenes", "Lista o comprime imágenes"),
-        ("validar", "Valida que acciones.json cumple el esquema"),
-        ("acciones", "Lista las acciones definidas en acciones.json"),
-        ("comprobar-ia", "Comprueba la conexión con el servidor de IA"),
-        ("ejecutar <nombre> --simular", "Ejecuta una acción (simulada)"),
-        ("ia sugerir <descripción>", "La IA propone una acción para acciones.json"),
-        ("ia explicar <acción>", "La IA explica qué haría una acción, en claro"),
-        ("cambio", "Cambia el color del menú (rojo, normal, azul, verde, amarillo)"),
-        ("tema", "Cambia los colores de todo el terminal (seis temas o uno propio)"),
-        ("cita", "Muestra una cita motivacional aleatoria"),
-    ]
-    
-    for comando, desc in comandos_guia:
-        guia_rapida.add_row(comando, desc)
-    
-    consola.print(guia_rapida)
 
-    # Tabla de todas las órdenes disponibles
-    tabla = Table(
-        title="Órdenes disponibles (todas)",
-        title_style=f"bold {color}",
-        header_style=f"bold {color}",
+def _pintar_empieza(color: str) -> None:
+    tabla = Table.grid(padding=(0, 2))
+    tabla.add_column(style=f"bold {color}", justify="right", no_wrap=True)
+    tabla.add_column(style="bold white", no_wrap=True)
+    tabla.add_column(style="dim")
+    for numero, comando, descripcion in EJEMPLOS:
+        tabla.add_row(numero, comando, descripcion)
+    consola.print(
+        Panel(
+            tabla,
+            title=Text("Empieza por aquí", style=f"bold {color}"),
+            border_style=color,
+            box=_caja(),
+            padding=(0, 1),
+        )
     )
-    tabla.add_column("Orden", style="bold")
-    tabla.add_column("Qué hace")
-    for nombre, descripcion in _ordenes_menu(app):
-        tabla.add_row(nombre, descripcion)
+
+
+def _pintar_categorias(app: typer.Typer, color: str) -> None:
+    datos = _datos_categorias(app)
+    if not datos:
+        return
+
+    ancho = consola.width or 80
+    if ancho < 70:
+        # Terminal estrecha: una línea por categoría, sin descripciones.
+        for nombre, filas in datos:
+            consola.print(Text(nombre, style=f"bold {color}"))
+            consola.print(
+                Text(" · ".join(comando for comando, _ in filas), style="white")
+            )
+        return
+
+    columnas = 3 if ancho >= 80 else 2
+    tabla = Table.grid(expand=True, padding=(0, 2))
+    for _ in range(columnas):
+        tabla.add_column()
+    bloques: list[Any] = [
+        _bloque_categoria(nombre, filas, color) for nombre, filas in datos
+    ]
+    for inicio in range(0, len(bloques), columnas):
+        fila = bloques[inicio : inicio + columnas]
+        fila.extend([""] * (columnas - len(fila)))
+        tabla.add_row(*fila)
     consola.print(tabla)
+
+
+def _pintar_extras(app: typer.Typer, color: str) -> None:
+    disponibles = dict(_ordenes_menu(app))
+    for nombre, comandos in EXTRAS.items():
+        vivos = [comando for comando in comandos if comando in disponibles]
+        if not vivos:
+            continue
+        linea = Text()
+        linea.append(f"{nombre}  ", style=f"bold {color}")
+        linea.append(" · ".join(vivos), style="white")
+        consola.print(linea)
+
+
+def _pintar_pie() -> None:
+    consola.print(Text(f"Consejo: {random.choice(CONSEJOS)}", style="dim"))
+    consola.print(Text("escribe una orden · ayuda · salir", style="dim"))
+
+
+def _pintar_menu(app: typer.Typer) -> None:
+    """Panel de mando: cabecera, ejemplos, categorías y consejo."""
+    color = color_actual()
+    _pintar_cabecera(color)
+    _pintar_empieza(color)
+    consola.print()
+    _pintar_categorias(app, color)
+    _pintar_extras(app, color)
+    consola.print()
+    _pintar_pie()
 
 
 def _mostrar_cita_motivacional() -> None:
@@ -194,8 +363,6 @@ def _mostrar_cita_motivacional() -> None:
 
 def _bucle_menu(app: typer.Typer) -> None:
     _pintar_menu(app)
-    # Mostrar una cita motivacional al inicio del menú
-    _mostrar_cita_motivacional()
     color_anterior = color_actual()
 
     while True:
@@ -225,6 +392,8 @@ def _bucle_menu(app: typer.Typer) -> None:
             partes[0] = partes[0].lstrip("/")
         if partes and partes[0].lower() == "tareas":
             partes = partes[1:]
+        if len(partes) == 1 and partes[0] in ATAJOS_INICIO:
+            partes = list(ATAJOS_INICIO[partes[0]])
         if partes:
             _ejecutar(app, partes)
             if color_actual() != color_anterior:

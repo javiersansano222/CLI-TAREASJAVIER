@@ -53,12 +53,6 @@ MENSAJE_CERTIFICADO = (
 )
 
 
-class IANoDisponible(TareasError):
-    """Sin clave, sin red o el servidor de IA no responde: las órdenes sin IA siguen."""
-
-    codigo_salida = 4
-
-
 class FaltaClaveIA(IANoDisponible):
     """Falta CENTRO_IA_KEY o CENTRO_IA_URL en el entorno."""
 

@@ -255,3 +255,12 @@ def test_sin_red_el_mensaje_es_humano():
     proveedor = ProveedorCentro("http://127.0.0.1:9/v1", "clave-de-prueba")
     with pytest.raises(IANoDisponible, match="conexión"):
         proveedor.completar("sistema", "usuario")
+
+
+def test_ianodisponible_es_una_sola_clase():
+    """IA, errores y CLI comparten la misma excepción base (sin duplicados)."""
+    from tareas.errores import IANoDisponible as IANoDisponibleBase
+
+    assert IANoDisponible is IANoDisponibleBase
+    assert issubclass(FaltaClaveIA, IANoDisponibleBase)
+    assert issubclass(ErrorRedIA, IANoDisponibleBase)

@@ -22,6 +22,9 @@ class Motor:
         self.acciones: dict[str, Accion] = {
             accion["nombre"]: Accion.desde_config(accion) for accion in acciones
         }
+        # Invariante: cargar() ya rechazó nombres repetidos, así que no se pierde
+        # ninguna acción al construir el diccionario.
+        assert len(self.acciones) == len(acciones), "acciones con nombre repetido"
         # La CLI lo rellena solo cuando la acción pedida necesita IA y no es
         # simulación: sin proveedor, una acción con IA nunca gasta tokens.
         self.proveedor: ProveedorIA | None = None
@@ -81,6 +84,8 @@ class Motor:
 
             elegidos.append(ruta)
 
+        # Invariante: solo se devuelven ficheros que existen en este momento.
+        assert all(ruta.is_file() for ruta in elegidos), "selección con no-ficheros"
         return elegidos
 
     def ejecutar(
@@ -96,7 +101,12 @@ class Motor:
         if not ruta.is_dir():
             raise TareasError(f"La carpeta «{ruta}» no existe o no es una carpeta.")
 
-        ficheros = self.seleccionar(ruta, accion.config.get("filtro", {}))
         if isinstance(accion, AccionIA):
             accion.proveedor = self.proveedor
+        # Las acciones que resumen una carpeta entera (mirar_espacio) no tienen
+        # sentido fichero a fichero: se ejecutan una sola vez sobre la carpeta.
+        if accion.por_carpeta:
+            return accion.ejecutar_sobre_carpeta(ruta, simular)
+
+        ficheros = self.seleccionar(ruta, accion.config.get("filtro", {}))
         return accion.ejecutar(ficheros, simular)

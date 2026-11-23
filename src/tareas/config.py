@@ -120,6 +120,8 @@ def cargar(ruta: Path) -> list[dict[str, Any]]:
         if accion["tipo"] in TIPOS_IA:
             _validar_ia(accion, nombre)
 
+    # Invariante: tras validar, ningún nombre se repite (el motor indexa por él).
+    assert len(nombres) == len(acciones), "acciones con nombre repetido"
     return acciones
 
 

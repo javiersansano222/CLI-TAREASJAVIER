@@ -324,3 +324,23 @@ def test_mover_aparece_en_la_ayuda():
     resultado = runner.invoke(app, ["--help"])
     assert resultado.exit_code == 0
     assert "mover" in salida(resultado)
+
+
+def test_mirar_espacio_ensena_un_solo_resumen(escribir_config, tmp_path):
+    """mirar-espacio no repite el total una vez por cada fichero."""
+    carpeta = tmp_path / "datos"
+    carpeta.mkdir()
+    (carpeta / "a.txt").write_text("x", encoding="utf-8")
+    (carpeta / "b.txt").write_text("y", encoding="utf-8")
+    ruta = escribir_config(
+        [{"nombre": "mirar-espacio", "descripcion": "mide", "tipo": "mirar_espacio"}]
+    )
+
+    resultado = runner.invoke(
+        app, ["--config", str(ruta), "mirar-espacio", str(carpeta)]
+    )
+
+    assert resultado.exit_code == 0
+    texto = salida(resultado)
+    assert "2 ficheros" in texto
+    assert texto.count("2 ficheros") == 1

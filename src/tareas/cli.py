@@ -29,7 +29,7 @@ from tareas import terminal as modulo_terminal
 from tareas.acciones import Resultado
 from tareas.bienvenida import mostrar_bienvenida
 from tareas.chuleta import mostrar_chuleta
-from tareas.errores import TareasError
+from tareas.errores import IANoDisponible, TareasError
 from tareas.sistema import mostrar_sistema
 from tareas.menu import cambiar_color, color_actual, menu_activo, menu_interactivo, _mostrar_cita_motivacional
 from tareas.motor import Motor
@@ -73,7 +73,7 @@ def fecha_legible(marca: float) -> str:
 
 def _mostrar_error(error: TareasError) -> NoReturn:
     consola_err.print(f"[red]✘ {escape(str(error))}[/red]")
-    if isinstance(error, modulo_ia.IANoDisponible):
+    if isinstance(error, IANoDisponible):
         consola_err.print(f"[yellow]{escape(error.consejo)}[/yellow]")
         consola_err.print(
             "[dim]Las acciones sin IA siguen funcionando: "
@@ -965,15 +965,15 @@ def imagenes(
 
 @app.command("mirar-espacio")
 def mirar_espacio(
+    ctx: typer.Context,
     carpeta: Annotated[
         Path | None,
         typer.Argument(help="Carpeta a revisar (por defecto, el origen de la acción)."),
     ] = None,
     simular: Annotated[
         bool,
-        typer.Option("--simular", help="Enseña qué ficheros ocuparían sin tocar nada."),
+        typer.Option("--simular", help="Mide sin cambiar nada (no toca ficheros)."),
     ] = False,
-    ctx: typer.Context = typer.Argument(),
 ) -> None:
     """Muestra el espacio total y número de ficheros de una carpeta."""
     try:
@@ -984,19 +984,19 @@ def mirar_espacio(
         _mostrar_error(error)
 
     tabla = Table(title=f"Espacio en {escape(str(ruta))}")
-    tabla.add_column("Fichero")
+    tabla.add_column("Carpeta")
     tabla.add_column("Estado")
     tabla.add_column("Detalle")
     for resultado in resultados:
         detalle = resultado.detalle or "—"
         tabla.add_row(
-            escape(resultado.origen.name),
+            escape(resultado.origen.name or str(resultado.origen)),
             resultado.estado,
-            detalle,
+            escape(detalle),
         )
     consola.print(tabla)
     if simular:
-        consola.print("Para hacerlo de verdad, repite la orden sin --simular.")
+        consola.print("Esta orden nunca modifica ficheros: --simular solo etiqueta.")
 
 
 @app.command()
@@ -1269,7 +1269,7 @@ def comprobar_ia() -> None:
         )
     except TareasError as error:
         consola_err.print(f"[red]✘ {escape(str(error))}[/red]")
-        if isinstance(error, modulo_ia.IANoDisponible):
+        if isinstance(error, IANoDisponible):
             consola_err.print(f"[yellow]{escape(error.consejo)}[/yellow]")
         raise typer.Exit(code=error.codigo_salida)
 

@@ -72,3 +72,22 @@ def test_motor_seleccionar_con_extensiones():
         seleccionados = motor.seleccionar(carpeta, {"extensiones": [".txt"]})
         assert len(seleccionados) == 2
         assert all(ruta.suffix == ".txt" for ruta in seleccionados)
+
+def test_mirar_espacio_resume_la_carpeta_en_una_sola_fila(escribir_config, tmp_path):
+    """mirar-espacio mide la carpeta entera: no una fila repetida por fichero."""
+    from tareas.config import cargar
+
+    carpeta = tmp_path / "Descargas"
+    carpeta.mkdir()
+    for nombre in ("a.txt", "b.txt", "c.bin"):
+        (carpeta / nombre).write_text("x", encoding="utf-8")
+    ruta = escribir_config(
+        [{"nombre": "mirar-espacio", "descripcion": "mide", "tipo": "mirar_espacio"}]
+    )
+
+    motor = Motor(cargar(ruta))
+    resultados = motor.ejecutar("mirar-espacio", carpeta, simular=False)
+
+    assert len(resultados) == 1
+    assert resultados[0].origen == carpeta
+    assert "3 ficheros" in resultados[0].detalle

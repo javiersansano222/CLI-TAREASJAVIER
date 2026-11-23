@@ -12,6 +12,15 @@ class IANoDisponible(TareasError):
 
     codigo_salida = 4
 
+    @property
+    def consejo(self) -> str:
+        """Qué puede hacer el usuario sin depender de la IA."""
+        return (
+            "Qué hacer: revisa «tareas comprobar-ia» y el .env (mira "
+            ".env.example). Mientras tanto, las acciones sin IA siguen "
+            "funcionando igual."
+        )
+
 
 class ConfigError(TareasError):
     """acciones.json no existe, no es JSON o no cumple el esquema."""

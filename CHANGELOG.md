@@ -35,6 +35,11 @@ Todos los cambios que notará quien USA la herramienta. Formato:
 
 ### Corregido
 
+- `mirar-espacio` mide la carpeta una sola vez: antes repetía el mismo total
+  en una fila por cada fichero, lo que hacía la salida confusa.
+- La excepción `IANoDisponible` ya no está duplicada en `ia.py`: hay una sola
+  en `errores.py`, así el mismo código de salida 4 y el mismo consejo valen
+  para la IA de las acciones y para `comprobar-ia`.
 - README: aviso de que, si `tareas` se instaló desde la carpeta del repositorio
   sin `--editable`, los cambios de código no se ven hasta
   `uv tool install --reinstall .`.

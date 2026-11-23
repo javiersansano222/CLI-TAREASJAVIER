@@ -64,6 +64,8 @@ def destino_libre(
     ):
         libre = destino.with_name(f"{destino.stem} ({numero}){destino.suffix}")
         numero += 1
+    # Invariante: la ruta devuelta no pisa nada ni choca con otro destino.
+    assert libre not in ocupados, "destino_libre devolvió una ruta reservada"
     return libre
 
 
@@ -138,6 +140,7 @@ class Accion(ABC):
     tipo = ""
     destructiva = False
     necesita_ia = False
+    por_carpeta = False
     _registro: dict[str, type[Accion]] = {}
 
     def __init__(self, config: dict[str, Any]) -> None:
@@ -191,6 +194,12 @@ class Accion(ABC):
         libre = destino_libre(destino, self._reservados, self._desaparecidos)
         self._reservados.add(libre)
         return libre
+
+    def ejecutar_sobre_carpeta(
+        self, carpeta: Path, simular: bool
+    ) -> list[Resultado]:
+        """Acciones que miran la carpeta entera, no fichero a fichero."""
+        raise NotImplementedError(f"«{self.tipo}» no resume carpetas")
 
     @abstractmethod
     def aplicar(self, fichero: Path, n: int, simular: bool) -> Resultado:
@@ -255,14 +264,28 @@ class Borrar(Accion):
 
 
 class MirarEspacio(Accion):
+    """Resume una carpeta entera: una fila, no una repetida por cada fichero."""
+
     tipo = "mirar_espacio"
+    por_carpeta = True
+
+    def ejecutar_sobre_carpeta(
+        self, carpeta: Path, simular: bool
+    ) -> list[Resultado]:
+        try:
+            ficheros = [ruta for ruta in carpeta.iterdir() if ruta.is_file()]
+            total = sum(fichero.stat().st_size for fichero in ficheros)
+        except OSError as exc:
+            return [Resultado(carpeta, None, "error", str(exc))]
+        detalle = f"Total: {total / 1024 / 1024:.2f} MB ({len(ficheros)} ficheros)"
+        return [
+            Resultado(carpeta, None, "simulado" if simular else "hecho", detalle)
+        ]
 
     def aplicar(self, fichero: Path, n: int, simular: bool) -> Resultado:
-        try:
-            total = sum(f.stat().st_size for f in fichero.parent.iterdir() if f.is_file())
-            return Resultado(fichero, None, "hecho", f"Total: {total / 1024 / 1024:.2f} MB ({len(list(fichero.parent.iterdir()))} ficheros)")
-        except OSError as exc:
-            return Resultado(fichero, None, "error", str(exc))
+        """Compatibilidad: mide la carpeta que contiene el fichero."""
+        [resultado] = self.ejecutar_sobre_carpeta(fichero.parent, simular)
+        return resultado
 
 
 class AccionIA(Accion):

@@ -19,6 +19,15 @@ Mi herramienta de línea de órdenes para automatizar tareas repetitivas con fic
 
 Antes de instalar en otro equipo, sube los últimos cambios con `git push`.
 
+Las órdenes de instalación de esta sección (el comando de un solo paso y la
+instalación a mano) se han probado y funcionan en los tres sistemas: Windows,
+Linux y macOS. Los dos scripts (`instalar.ps1` en Windows y `instalar.sh` en
+Linux y macOS) instalan `uv` y Python, bajan la CLI desde GitHub, la dejan
+disponible como comando `tareas` desde cualquier carpeta y comprueban al final
+que todo está correcto. Además, las pruebas automáticas se ejecutan en los tres
+sistemas en cada cambio, así que el código queda verificado también en equipos
+distintos al mío.
+
 ### Un solo comando (recomendado)
 
 Baja todo de GitHub: no hace falta Git ni clonar el repo.

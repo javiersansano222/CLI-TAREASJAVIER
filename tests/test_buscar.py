@@ -90,7 +90,9 @@ def test_omite_carpetas_ruidosas(tmp_path):
 
     resultados = buscar.buscar("nota", carpeta=tmp_path)
 
-    assert [str(c.ruta.relative_to(tmp_path)) for c in resultados] == [
+    # as_posix para que la comparativa sea la misma en Windows (\) y en
+    # Linux/macOS (/), donde vive el workflow multiplataforma.
+    assert [c.ruta.relative_to(tmp_path).as_posix() for c in resultados] == [
         "src/nota.txt"
     ]
 

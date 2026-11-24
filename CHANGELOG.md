@@ -13,6 +13,12 @@ Todos los cambios que notará quien USA la herramienta. Formato:
   descargas; `--ext` (repetible) filtra por extensión, `--regex` trata el texto
   como expresión regular y omite `.git`, `__pycache__`, `.venv` y
   `node_modules`. Si pasa de 200 coincidencias, corta y avisa. Solo lee.
+- Nuevas opciones `--config` para `doctor`: la ruta de búsqueda por defecto es
+  `./acciones.json` y, si no existe, `~/acciones.json`, donde el instalador
+  copia la plantilla. El mensaje de error explica qué hacer.
+- README: sección «Buscar ficheros por nombre» y sección «Diagnóstico del
+  entorno» actualizadas con el orden de búsqueda y ejemplos copiables en
+  Windows (PowerShell) y Linux/macOS.
 - `tareas historial`: muestra los últimos lotes de operaciones con su fecha,
   la orden que los produjo y si se pueden deshacer. Se guarda en
   `historial.jsonl`, junto a los ajustes, y las simulaciones no se apuntan.

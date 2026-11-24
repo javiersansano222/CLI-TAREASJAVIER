@@ -1340,7 +1340,7 @@ instituto.
 
 Pruebas automáticas y release 1.0.0:
 
-- **68 tests en verde** con `uv run pytest -q`, todos en carpetas temporales
+- **237 tests en verde** con `uv run pytest -q`, todos en carpetas temporales
   y sin red.
   - `tests/conftest.py`: fixture `aislado` (autouse) con `tmp_path`, `HOME`,
     `USERPROFILE` y sin las variables del centro; `descargas` con ficheros
@@ -1355,6 +1355,9 @@ Pruebas automáticas y release 1.0.0:
     `ProveedorFalso`, sin clave y sin red.
   - `tests/test_cli.py` (7): `CliRunner` con los códigos de salida 0, 1, 2,
     3 y 4.
+  - `tests/test_buscar.py` (12): subcadena, glob, `--regex`, extensión
+    normalizada, carpetas omitidas (`.git`, `.venv`…), orden por fecha y
+    errores humanos de carpeta, regex y extensión.
 - Mutación comprobada: sacar el `mkdir` de `Mover` fuera del
   `if not simular` pone en rojo `test_simular_no_toca_el_disco`
   (1 failed, 67 passed); después se restauró el código.

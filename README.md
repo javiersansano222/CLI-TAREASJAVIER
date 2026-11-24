@@ -1426,3 +1426,27 @@ Comprobado en carpetas temporales de `%TEMP%`, nunca sobre carpetas reales:
   una carpeta, se rechaza y se remite a `tareas organizar`.
 - Todo esto está cubierto por `tests/test_organizar.py` y
   `tests/test_mover.py`, más los casos de CLI de `tests/test_cli.py`.
+
+## Estado de `tareas buscar`
+
+Comprobado sobre carpetas del propio repo (solo lectura) y en carpetas
+temporales con pytest; nunca se toca el disco salvo para leer nombres:
+
+- `tareas buscar README --en ~/Documents/CLI-TAREASJAVIER`: encuentra el
+  `README.md` y lo saca en tabla con tamaño y fecha; código 0.
+- Sin `--en`, busca en la carpeta de descargas (en esta máquina, `~/Baixades`)
+  y, si no hay nada, dice «Sin resultados para…» con **código 0**: no es un
+  error, es que no estaba ahí.
+- Con `--ext` la extensión se normaliza: `pdf` y `.pdf` valen, mayúsculas
+  incluidas; se puede repetir (`--ext pdf --ext jpg`).
+- Con `--regex`, el texto se trata como expresión regular (`test_.*\.py`);
+  una expresión rota sale con **código 1** y el motivo, sin traceback.
+- El texto sin comodines busca como subcadena; si lleva `*?[` se comporta
+  como glob.
+- Omite `.git`, `__pycache__`, `.venv` y `node_modules` para no llenar la
+  tabla de basura.
+- Carpeta que no existe (`--en /ruta/inventada`) y texto vacío: **código 1**
+  con mensaje claro.
+- Más de 200 coincidencias: corta y lo avisa en el pie.
+- 12 pruebas automáticas en `tests/test_buscar.py` (subcadena, glob, regex,
+  extensión, carpetas omitidas, orden por fecha y todos los errores).

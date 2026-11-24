@@ -847,3 +847,60 @@ los importe.
 **Resultado:** **134 tests en verde y 1 saltado** (el de XDG, que no aplica en
 Windows), versión 1.1.0, README con los seis temas, límites por terminal e
 instrucciones de importación, y ADR-0003 con la decisión y las alternativas.
+
+## 2026-11-24 · `tareas buscar`: encuentra ficheros por nombre
+
+**Prompt de plan (resumen):** «¿Crees que sería aconsejable añadir un comando
+nuevo útil?» Propuse `tareas buscar <texto>` como la pieza que faltaba: tengo
+mover, organizar, copiar, listar, informe… pero para localizar un fichero seguía
+usando `find`/`grep`. En 1º DAM es un ejercicio natural de `pathlib.rglob` +
+`fnmatch`/`re`, y encaja con la filosofía de la CLI (opción `--en`, sin
+dependencias nuevas, multiplataforma).
+
+**Prompt de build:** «Si, implémentame tu recomendación». Diseño: módulo nuevo
+`src/tareas/buscar.py` con `buscar.buscar(texto, carpeta, extensiones, regex)`
+que devuelve una lista de `Coincidencia(ruta, tamano, modificado)`. La orden en
+`cli.py` pinta la tabla con Rich. La carpeta por defecto es la de descargas
+(mismo `carpeta_descargas()` que usa `mover`). Omitidas: `.git`, `__pycache__`,
+`.venv`, `node_modules`. Tope de 200 resultados. Errores humanos con código 1.
+
+**Qué corregí del primer planteamiento:**
+
+- Al principio el filtro de texto sin comodines era glob puro; no encontraba
+  «apuntes de redes.docx» si el usuario escribía solo `redes`. Lo cambié: si el
+  texto no tiene `*?[`, se comporta como subcadena.
+- Primer intento usaba `ruta.relative_to(base)` con `base = Path(".")`, pero si
+  el usuario hacía `--en .` el `Path(".")` del `rglob` no era el mismo que el
+  base resuelto y saltaba `ValueError: 'README.md' is not in the subpath of …`.
+  Se resolvió llamando a `.resolve()` al principio y calculando las partes con
+  `ruta.parts[len(base.parts) - 1 :]`, sin `relative_to`.
+- El filtro de extensión fallaba con «PDF» en mayúsculas y con «.» a secas.
+  Normalicé con `_extension_normalizada`: quito y añado punto, minúsculas, y si
+  la longitud es < 2 lanzo `TareasError`.
+- La primera versión usaba `EXTRAESION_DEFECTO`; corregido a `EXTENSION_DEFECTO`.
+
+**Pruebas manuales:** todas sobre el propio repo o `~/Baixades`, sin tocar nada.
+Verificadas en las secciones «Estado de `tareas buscar`» del README:
+
+- `uv run tareas buscar README --en .` → 2 coincidencias, tabla con tamaño y
+  fecha, código 0.
+- `uv run tareas buscar doctor --en src` → encuentra `doctor.py`.
+- `uv run tareas buscar .py --en src --ext py` → 25 coincidencias.
+- `uv run tareas buscar "IMG_[0-9]+" --regex --en .` → 0 coincidencias.
+- `uv run tareas buscar README` (sin `--en`) → «Sin resultados en Baixades»,
+  código 0: no es error, es que el fichero no está ahí.
+- `uv run tareas buscar x --en /ruta/inventada` → código 1, mensaje humano.
+- `uv run tareas buscar ""` → código 1 con el ejemplo correcto.
+- `uv run tareas buscar "(" --regex` → código 1, explica la posición del fallo.
+
+**Aprendizaje:** `pathlib.rglob` es recursivo pero pisa las carpetas ocultas; hay
+que filtrarlas a mano. Con `--regex` conviene compilar antes el patrón para dar
+el error en la propia CLI y no dejar que `re.error` suba hasta el traceback
+genérico. Y `relative_to` es frágil cuando las rutas se resuelven tarde: mejor
+recortar por partes.
+
+**Resultado:** 12 tests nuevos en `tests/test_buscar.py`, **237 tests en verde y
+1 saltado** (el XDG de `test_ajustes`, que sigue sin aplicar en Windows), la
+orden aparece en el menú interactivo (grupo ARCHIVOS, «encuentra»), sección en
+README y entrada en CHANGELOG.
+

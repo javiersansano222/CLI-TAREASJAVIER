@@ -40,6 +40,7 @@ CATEGORIAS: dict[str, tuple[str, ...]] = {
         "temporales",
         "imagenes",
         "listar",
+        "buscar",
     ),
     "SISTEMA": (
         "doctor",
@@ -95,6 +96,7 @@ DESCRIPCIONES_CORTAS: dict[str, str] = {
     "temporales": "limpia",
     "imagenes": "comprime",
     "listar": "muestra",
+    "buscar": "encuentra",
     "doctor": "diagnostica",
     "sistema": "disco/RAM",
     "mirar-espacio": "mide",

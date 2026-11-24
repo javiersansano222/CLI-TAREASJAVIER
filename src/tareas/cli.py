@@ -14,6 +14,7 @@ from rich.table import Table
 
 from tareas import __version__
 from tareas import ajustes as modulo_ajustes
+from tareas import buscar as modulo_buscar
 from tareas import capturas as modulo_capturas
 from tareas import config as configuracion
 from tareas import doctor as modulo_doctor
@@ -580,6 +581,75 @@ def listar(
         tabla.add_row(escape(ruta.name), tipo, tamano, fecha)
 
     consola.print(tabla)
+
+
+@app.command()
+def buscar(
+    texto: Annotated[
+        str,
+        typer.Argument(
+            help="Nombre (o parte) que buscas; con --regex, expresión regular."
+        ),
+    ],
+    en: Annotated[
+        Path | None,
+        typer.Option(
+            "--en",
+            help="Carpeta donde buscar. Por defecto, Descargas.",
+        ),
+    ] = None,
+    ext: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--ext",
+            help="Filtra por extensión (pdf, .jpg…). Se puede repetir.",
+        ),
+    ] = None,
+    regex: Annotated[
+        bool,
+        typer.Option("--regex", help="Trata el texto como expresión regular."),
+    ] = False,
+) -> None:
+    """Busca ficheros por nombre de forma recursiva y los lista en una tabla."""
+    try:
+        coincidencias = modulo_buscar.buscar(
+            texto, carpeta=en, extensiones=ext, regex=regex
+        )
+    except TareasError as error:
+        _mostrar_error(error)
+
+    base = modulo_buscar.carpeta_busqueda(en).resolve()
+    if not coincidencias:
+        consola.print(
+            f"Sin resultados para «{escape(texto)}» dentro de «{escape(str(base))}»."
+        )
+        return
+
+    tabla = Table(
+        title=f"Coincidencias de «{escape(texto)}» en {escape(str(base))}"
+    )
+    tabla.add_column("Nombre")
+    tabla.add_column("Dentro de")
+    tabla.add_column("Tamaño", justify="right")
+    tabla.add_column("Modificado")
+
+    for coincidencia in coincidencias:
+        relativa = coincidencia.ruta.relative_to(base)
+        dentro = str(relativa.parent) if str(relativa.parent) != "." else "./"
+        tabla.add_row(
+            escape(coincidencia.ruta.name),
+            escape(dentro),
+            tamano_legible(coincidencia.tamano),
+            fecha_legible(coincidencia.modificado),
+        )
+
+    consola.print(tabla)
+    cortado = len(coincidencias) == modulo_buscar.MAX_RESULTADOS
+    sufijo = " (cortado)" if cortado else ""
+    consola.print(
+        f"[dim]{len(coincidencias)} coincidencia"
+        f"{'s' if len(coincidencias) != 1 else ''}{sufijo} en «{escape(str(base))}».[/dim]"
+    )
 
 
 @app.command()

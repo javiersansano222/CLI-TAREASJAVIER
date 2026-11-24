@@ -7,7 +7,7 @@ Mi herramienta de línea de órdenes para automatizar tareas repetitivas con fic
 1. **Problema:** cada semana pierdo tiempo ordenando Descargas, limpiando temporales antiguos y poniendo nombre a las capturas a mano.
 2. **Para quién:** para mí y para mis compañeros de clase.
 3. **Cómo se usa:** `tareas ORDEN [CARPETA] [opciones]` desde cualquier terminal.
-4. **Órdenes:** `--help`, `version`, `hola`, `cambio`, `tema`, `listar`, `organizar`, `mover`, `capturas`, `temporales`, `informe`, `imagenes`, `chuleta`, `sistema`, `cita`, `acciones`, `validar`, `ejecutar`, `doctor`, `historial`, `deshacer`, `comprobar-ia` y `ia sugerir`/`ia explicar`.
+4. **Órdenes:** `--help`, `version`, `hola`, `cambio`, `tema`, `listar`, `buscar`, `organizar`, `mover`, `capturas`, `temporales`, `informe`, `imagenes`, `chuleta`, `sistema`, `cita`, `acciones`, `validar`, `ejecutar`, `doctor`, `historial`, `deshacer`, `comprobar-ia` y `ia sugerir`/`ia explicar`.
 5. **Mis acciones:** limpiar temporales de más de 30 días, mover imágenes a `~/Imágenes/Fotos`, renombrar capturas por fecha y copiar instaladores `.exe`/`.deb` a una carpeta de respaldo.
 6. **Nunca hará:** borrar sin pedir confirmación (salvo `--si`) ni tocar ficheros fuera del origen y destino configurados.
 7. **Plataformas:** Linux primero; también Windows y macOS.
@@ -381,6 +381,10 @@ tareas hola
 
 tareas listar ~/Descargas
 
+tareas buscar apuntes --en ~/Documentos
+tareas buscar factura --ext pdf
+tareas buscar "IMG_[0-9]+\.jpg" --regex
+
 tareas organizar ~/pruebas-tareas/mezcla --simular
 tareas organizar ~/pruebas-tareas/mezcla
 
@@ -609,6 +613,7 @@ caber en una pantalla. Arriba están los tres primeros pasos; debajo, las
   temporales limpia     informe   resumen      hola     bienvenida
   imagenes   comprime   validar   acciones     cita     frase
   listar     muestra    ejecutar  lanza
+  buscar     encuentra
 
   SEGURIDAD  historial · deshacer
   IA  comprobar-ia · ia sugerir · ia explicar
@@ -881,6 +886,28 @@ No mueve, renombra ni borra nada. Solo cuenta el primer nivel de la carpeta e
 ignora enlaces simbólicos. `--top` limita las filas de cada tabla y `--horas`
 cambia la antigüedad con la que se cuentan las capturas pendientes.
 
+## Buscar ficheros por nombre
+
+`tareas buscar <texto>` recorre recursivamente una carpeta y lista los ficheros
+cuyo nombre encaja. No escribe ni borra nada: solo lee nombres.
+
+```bash
+tareas buscar apuntes                     # subcadena en ~/Descargas
+tareas buscar factura --ext pdf --ext jpg # filtra por extensión
+tareas buscar foto --en ~/Imágenes        # otra carpeta raíz
+tareas buscar "IMG_[0-9]+\.jpg" --regex   # expresión regular
+```
+
+- Sin `--en`, busca en la carpeta de descargas de tu sistema.
+- El texto sin comodines se comporta como subcadena; si lleva `*?[` se trata
+  como un *glob* (por ejemplo `IMG_*.jpg`). Con `--regex` se interpreta como
+  expresión regular.
+- `--ext` se puede repetir (`--ext pdf --ext jpg`) y acepta `pdf` o `.pdf`.
+- Omite `.git`, `__pycache__`, `.venv` y `node_modules`.
+- Si hay más de 200 coincidencias, corta y avisa.
+
+No falla si no encuentra nada: dice «Sin resultados para «…» dentro de «…»».
+
 ## Comprimir y convertir imágenes
 
 `tareas imagenes` lista las imágenes JPEG, PNG y WebP del primer nivel de una
@@ -1038,7 +1065,7 @@ cli-tareas/
 │       ├── 0001-configuracion-externa.md
 │       ├── 0002-ia-interfaz-y-salida-4.md
 │       └── 0003-temas-de-terminal.md
-├── tests/                     Suite con pytest (185 en verde)
+├── tests/                     Suite con pytest (238 en verde)
 └── src/
     └── tareas/
         ├── __init__.py        Versión y salida en UTF-8
@@ -1046,6 +1073,7 @@ cli-tareas/
         ├── acciones.py        Resultado, destino_libre y las acciones con IA
         ├── ajustes.py         Preferencias guardadas (tema elegido)
         ├── bienvenida.py      Banner ASCII de bienvenida
+        ├── buscar.py          Busca ficheros por nombre de forma recursiva
         ├── capturas.py        Detecta capturas y las manda a la papelera
         ├── chuleta.py         Chuleta de Git y comandos de Linux
         ├── cli.py             Órdenes, opciones y salida

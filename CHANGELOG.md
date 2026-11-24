@@ -8,6 +8,11 @@ Todos los cambios que notará quien USA la herramienta. Formato:
 
 ### Añadido
 
+- `tareas buscar <texto>`: busca ficheros por nombre de forma recursiva y los
+  lista en una tabla con tamaño y fecha. Sin `--en`, busca en la carpeta de
+  descargas; `--ext` (repetible) filtra por extensión, `--regex` trata el texto
+  como expresión regular y omite `.git`, `__pycache__`, `.venv` y
+  `node_modules`. Si pasa de 200 coincidencias, corta y avisa. Solo lee.
 - `tareas historial`: muestra los últimos lotes de operaciones con su fecha,
   la orden que los produjo y si se pueden deshacer. Se guarda en
   `historial.jsonl`, junto a los ajustes, y las simulaciones no se apuntan.

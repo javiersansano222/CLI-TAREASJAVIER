@@ -497,8 +497,23 @@ $ cd ~/Documentos/CLI-TAREASJAVIER && tareas doctor   # encuentra ./acciones.jso
 $ tareas --config ~/Documentos/CLI-TAREASJAVIER/acciones.json doctor
 ```
 
-En Windows los `~` se cambian por `%USERPROFILE%` y las barras por `\`; por lo
-demás, las tres salidas son idénticas.
+Ejemplo completo en Windows (PowerShell):
+
+```powershell
+PS C:\> tareas doctor
+│ acciones.json │ ✘ error │ No encuentro «acciones.json». ... │   # fallo
+
+# 1) Copiar la plantilla al home (lo que ya hace el instalador)
+PS C:\> Copy-Item "$HOME\Documentos\CLI-TAREASJAVIER\acciones.json" "$HOME\acciones.json"
+PS C:\> tareas doctor
+│ acciones.json │ ✔ ok │ 8 acciones válidas en C:\Users\alumna\acciones.json │
+
+# 2) O, si trabajas dentro del repo, ejecutarlo desde su carpeta
+PS C:\> cd "$HOME\Documentos\CLI-TAREASJAVIER"; tareas doctor   # encuentra .\acciones.json
+
+# 3) O, si lo tienes en otro sitio, pasarle la ruta (--config va antes)
+PS C:\> tareas --config "$HOME\Documentos\CLI-TAREASJAVIER\acciones.json" doctor
+```
 
 ## IA del centro
 

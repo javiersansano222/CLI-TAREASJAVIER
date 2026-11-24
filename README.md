@@ -462,8 +462,13 @@ en otro sitio, pásale la ruta completa con `--config` (opción global, va **ant
 de la orden):
 
 ```bash
-tareas --config ~/Documents/CLI-TAREASJAVIER/acciones.json doctor
+tareas --config ~/Ruta/A/Tu/Clone/acciones.json doctor
 ```
+
+> La ruta de `--config` es literal: usa la de **tu** clon. En Windows la carpeta
+> personal suele ser `C:\Users\TU_USUARIO` (en PowerShell, `$HOME`); en Linux con
+> locale español puede ser `~/Documentos` y con inglés `~/Documents`. Sustitúyela
+> en los ejemplos siguientes.
 
 ### Si sale «No encuentro acciones.json»
 
@@ -486,15 +491,15 @@ $ cd ~ && tareas doctor
 │ acciones.json │ ✘ error │ No encuentro «acciones.json». ... │   # fallo
 
 # 1) Copiar la plantilla al home (lo que ya hace el instalador)
-$ cp ~/Documentos/CLI-TAREASJAVIER/acciones.json ~/acciones.json
+$ cp ~/Ruta/A/Tu/Clone/acciones.json ~/acciones.json
 $ tareas doctor
 │ acciones.json │ ✔ ok │ 8 acciones válidas en /home/alumna/acciones.json │
 
 # 2) O, si trabajas dentro del repo, ejecutarlo desde su carpeta
-$ cd ~/Documentos/CLI-TAREASJAVIER && tareas doctor   # encuentra ./acciones.json
+$ cd ~/Ruta/A/Tu/Clone && tareas doctor   # encuentra ./acciones.json
 
 # 3) O, si lo tienes en otro sitio, pasarle la ruta (--config va antes)
-$ tareas --config ~/Documentos/CLI-TAREASJAVIER/acciones.json doctor
+$ tareas --config ~/Ruta/A/Tu/Clone/acciones.json doctor
 ```
 
 Ejemplo completo en Windows (PowerShell):

@@ -10,9 +10,9 @@ caer lo que se baja de internet.
 from __future__ import annotations
 
 import fnmatch
+import os
 import re
 from dataclasses import dataclass
-from datetime import datetime
 from pathlib import Path
 
 from .errores import TareasError
@@ -98,33 +98,41 @@ def buscar(
 
     coincidencias: list[Coincidencia] = []
     base = carpeta_busqueda(carpeta).resolve()
-    try:
-        for ruta in base.rglob("*"):
-            try:
-                if not ruta.is_file():
+    # Recorrido a mano con os.scandir en vez de rglob: permite podar las
+    # carpetas omitidas sin bajar a ellas y saltar enlaces simbólicos, que en
+    # rglob provocarían bucles infinitos si alguno apunta a un antecesor.
+    pendientes = [base]
+    while pendientes:
+        try:
+            con_entrada = os.scandir(pendientes.pop())
+        except OSError:
+            continue
+        with con_entrada:
+            for entrada in con_entrada:
+                try:
+                    if entrada.is_symlink():
+                        continue
+                    if entrada.is_dir(follow_symlinks=False):
+                        if entrada.name not in OMITIDAS:
+                            pendientes.append(Path(entrada.path))
+                        continue
+                    if not entrada.is_file(follow_symlinks=False):
+                        continue
+                    ruta = Path(entrada.path)
+                    if extensiones_normales and entrada.name[
+                        entrada.name.rfind(".") :
+                    ].lower() not in extensiones_normales:
+                        continue
+                    if not _coincide(entrada.name, limpio, regex):
+                        continue
+                    datos = entrada.stat()
+                except OSError:
                     continue
-            except OSError:
-                continue
-
-            partes = ruta.parts[len(base.parts) - 1 :]
-            if any(parte in OMITIDAS for parte in partes[:-1]):
-                continue
-
-            nombre = ruta.name
-            if extensiones_normales and ruta.suffix.lower() not in extensiones_normales:
-                continue
-            if not _coincide(nombre, limpio, regex):
-                continue
-
-            try:
-                datos = ruta.stat()
-            except OSError:
-                continue
-            coincidencias.append(
-                Coincidencia(ruta=ruta, tamano=datos.st_size, modificado=datos.st_mtime)
-            )
-    except OSError:
-        pass
+                coincidencias.append(
+                    Coincidencia(
+                        ruta=ruta, tamano=datos.st_size, modificado=datos.st_mtime
+                    )
+                )
 
     coincidencias.sort(key=lambda c: c.modificado, reverse=True)
     return coincidencias[:MAX_RESULTADOS]

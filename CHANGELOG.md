@@ -31,6 +31,10 @@ Todos los cambios que notará quien USA la herramienta. Formato:
 
 ### Cambiado
 
+- `tareas buscar` recorre las carpetas con `os.scandir` en vez de `rglob`:
+  no baja de las carpetas omitidas (`.git`, `node_modules`, `__pycache__`,
+  entornos virtuales) y salta enlaces simbólicos, así no se enreda si alguno
+  apunta a una carpeta madre. Los resultados no cambian.
 - `mover`, `organizar`, `capturas`, `temporales`, `imagenes` y `ejecutar`
   apuntan automáticamente sus operaciones en el historial.
 - README: la instalación «Solo para usar la terminal» va paso a paso (instalar

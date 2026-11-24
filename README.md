@@ -903,7 +903,8 @@ tareas buscar "IMG_[0-9]+\.jpg" --regex   # expresión regular
   como un *glob* (por ejemplo `IMG_*.jpg`). Con `--regex` se interpreta como
   expresión regular.
 - `--ext` se puede repetir (`--ext pdf --ext jpg`) y acepta `pdf` o `.pdf`.
-- Omite `.git`, `__pycache__`, `.venv` y `node_modules`.
+- Omite `.git`, `__pycache__`, `.venv` y `node_modules` sin ni siquiera entrar
+  en ellas, y salta enlaces simbólicos para no enredarse en bucles.
 - Si hay más de 200 coincidencias, corta y avisa.
 
 No falla si no encuentra nada: dice «Sin resultados para «…» dentro de «…»».

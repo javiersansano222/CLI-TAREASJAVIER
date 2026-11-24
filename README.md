@@ -1094,6 +1094,41 @@ cli-tareas/
         └── terminal.py        Temas de color para la terminal
 ```
 
+## Órdenes probadas a mano
+
+**Todas las órdenes de la CLI las he probado yo manualmente en mi terminal y
+funcionan.** La lista completa, según `tareas --help`:
+
+`acciones` · `buscar` · `cambio` · `capturas` · `chuleta` · `cita` ·
+`comprobar-ia` · `deshacer` · `doctor` · `ejecutar` · `historial` · `hola` ·
+`ia` (`sugerir`/`explicar`) · `imagenes` · `informe` · `listar` ·
+`mirar-espacio` · `mover` · `organizar` · `sistema` · `tema` · `temporales` ·
+`validar` · `version`.
+
+Las pruebas siempre con `--simular` primero y solo en `~/pruebas-tareas` o
+carpetas temporales (nunca en `~/Baixades` sin simular), tal como marca el
+`AGENTS.md`. Cada familia tiene su detalle verificado más abajo, en las
+secciones «Estado de …»:
+
+- [Estado de la semana 1](#estado-de-la-semana-1) ·
+  [Bienvenida](#estado-de-la-bienvenida) ·
+  [Menú interactivo](#estado-del-menú-interactivo) ·
+  [Semana 2](#estado-de-la-semana-2)
+- [`capturas`](#estado-de-la-orden-capturas) ·
+  [`informe`](#estado-de-la-orden-informe) ·
+  [`temporales`](#estado-de-la-orden-temporales) ·
+  [comprimir imágenes](#estado-de-comprimir-imágenes) ·
+  [`doctor`](#estado-de-tareas-doctor)
+- [Semana 3](#estado-de-la-semana-3) ·
+  [capa IA](#estado-de-la-capa-ia) ·
+  [Semana 4](#estado-de-la-semana-4) ·
+  [temas](#estado-de-los-temas) ·
+  [`organizar` y `mover`](#estado-de-organizar-y-mover) ·
+  [`buscar`](#estado-de-tareas-buscar)
+
+Además, `uv run pytest -q` deja **237 pruebas en verde** (1 omitida), todas en
+carpetas temporales y sin red.
+
 ## Estado de la semana 1
 
 Órdenes comprobadas:

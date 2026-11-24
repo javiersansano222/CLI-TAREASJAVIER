@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from tareas.config import cargar, ConfigError, AccionNoValida
+from tareas.config import cargar, resolver_ruta, ConfigError, AccionNoValida
 
 RAIZ = Path(__file__).resolve().parents[1]
 
@@ -20,6 +20,51 @@ def test_cargar_acciones_sin_fichero(tmp_path: Path):
     ruta_inexistente = tmp_path / "nonexistent.json"
     with pytest.raises(ConfigError):
         cargar(ruta_inexistente)
+
+
+def test_resolver_ruta_respeta_la_indicada(tmp_path: Path):
+    """Con --config, la ruta se usa tal cual aunque no exista."""
+    ruta = tmp_path / "otra.json"
+    assert resolver_ruta(ruta) == ruta
+
+
+def test_resolver_ruta_prefiere_la_carpeta_actual(tmp_path: Path, monkeypatch):
+    """Si hay acciones.json donde lanzas la orden, se usa ese."""
+    actual = tmp_path / "actual"
+    casa = tmp_path / "casa"
+    actual.mkdir()
+    casa.mkdir()
+    (actual / "acciones.json").write_text("{}", encoding="utf-8")
+    (casa / "acciones.json").write_text("{}", encoding="utf-8")
+    monkeypatch.chdir(actual)
+    monkeypatch.setenv("HOME", str(casa))
+    monkeypatch.setenv("USERPROFILE", str(casa))
+    assert resolver_ruta() == actual / "acciones.json"
+
+
+def test_resolver_ruta_encuentra_la_carpeta_personal(tmp_path: Path, monkeypatch):
+    """Fuera del repo, usa el acciones.json que deja el instalador en ~."""
+    actual = tmp_path / "actual"
+    casa = tmp_path / "casa"
+    actual.mkdir()
+    casa.mkdir()
+    (casa / "acciones.json").write_text("{}", encoding="utf-8")
+    monkeypatch.chdir(actual)
+    monkeypatch.setenv("HOME", str(casa))
+    monkeypatch.setenv("USERPROFILE", str(casa))
+    assert resolver_ruta() == casa / "acciones.json"
+
+
+def test_resolver_ruta_sin_fichero_devuelve_la_actual(tmp_path: Path, monkeypatch):
+    """Sin fichero, el error debe señalar la carpeta actual."""
+    actual = tmp_path / "actual"
+    casa = tmp_path / "casa"
+    actual.mkdir()
+    casa.mkdir()
+    monkeypatch.chdir(actual)
+    monkeypatch.setenv("HOME", str(casa))
+    monkeypatch.setenv("USERPROFILE", str(casa))
+    assert resolver_ruta() == actual / "acciones.json"
 
 
 def test_version_invalida(tmp_path: Path):

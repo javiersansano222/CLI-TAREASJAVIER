@@ -6,6 +6,7 @@ Una prueba por código de salida (0, 1, 2, 3 y 4). Nada de subprocess ni de
 
 from __future__ import annotations
 
+import json
 import re
 
 import pytest
@@ -124,6 +125,29 @@ def test_doctor_avisa_de_ia_sin_configurar_sin_contarlo_como_aviso(
     assert resultado.exit_code == 0
     assert "Sin configurar" in salida(resultado)
     assert "0 avisos" not in salida(resultado)
+
+
+def test_doctor_encuentra_acciones_en_la_carpeta_personal(
+    tmp_path, monkeypatch
+):
+    """Tras instalar, acciones.json vive en ~: doctor debe encontrarlo igual."""
+    actual = tmp_path / "actual"
+    casa = tmp_path / "casa"
+    actual.mkdir()
+    casa.mkdir()
+    (casa / "Downloads").mkdir()
+    (casa / "acciones.json").write_text(
+        json.dumps({"version": 1, "acciones": [ACCION_BORRAR]}),
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(actual)
+    monkeypatch.setenv("HOME", str(casa))
+    monkeypatch.setenv("USERPROFILE", str(casa))
+
+    resultado = runner.invoke(app, ["doctor"])
+
+    assert resultado.exit_code == 0
+    assert "acciones válidas" in salida(resultado)
 
 
 def test_tema_sin_argumentos_lista_los_disponibles():

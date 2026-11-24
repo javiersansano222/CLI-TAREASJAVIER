@@ -12,6 +12,7 @@ from typing import Any
 
 from .errores import AccionNoValida, ConfigError
 
+NOMBRE_FICHERO = "acciones.json"
 TIPOS = {
     "mover",
     "copiar",
@@ -57,12 +58,29 @@ CARACTERES_PROHIBIDOS = set('/\\<>:"|?*')
 NOMBRES_RESERVADOS = {"CON", "PRN", "AUX", "NUL"}
 
 
+def resolver_ruta(ruta: Path | None = None) -> Path:
+    """Elige acciones.json: la ruta indicada, la actual o la de la carpeta personal.
+
+    El instalador deja «acciones.json» en ~, así que se busca ahí después de la
+    carpeta actual. Si no hay ninguno, se devuelve la de la carpeta actual para
+    que el mensaje de error diga dónde se esperaba.
+    """
+    if ruta is not None:
+        return ruta
+    candidatas = [Path.cwd() / NOMBRE_FICHERO, Path.home() / NOMBRE_FICHERO]
+    for candidata in candidatas:
+        if candidata.is_file():
+            return candidata
+    return candidatas[0]
+
+
 def cargar(ruta: Path) -> list[dict[str, Any]]:
     """Lee y valida el fichero de acciones; devuelve la lista lista para usar."""
     ruta = ruta.expanduser()
     if not ruta.is_file():
         raise ConfigError(
-            f"No encuentro «{ruta}». Crea acciones.json o usa --config RUTA."
+            f"No encuentro «{ruta}». Deja acciones.json en la carpeta actual o "
+            "en tu carpeta personal, o usa --config RUTA."
         )
 
     try:

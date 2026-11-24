@@ -425,8 +425,9 @@ tareas --config ~/pruebas-tareas/acciones.json acciones
 ```
 
 Todas las órdenes funcionan desde cualquier carpeta. `--config` es una opción
-global y va **antes** de la orden. Por defecto se lee `./acciones.json`, en la
-carpeta desde la que se lanza la orden.
+global y va **antes** de la orden. Por defecto se busca `./acciones.json` en la
+carpeta desde la que se lanza la orden y, si no existe, `~/acciones.json` (donde
+lo deja el instalador).
 
 ## Chuleta de Git y Linux
 
@@ -455,13 +456,28 @@ No crea, mueve ni borra nada. Los ⚠ son avisos (código 0): algo funciona a me
 como una carpeta que falta o una dependencia opcional. Un ✘ es bloqueante (código 3):
 `acciones.json` no se puede leer o no cumple el esquema. Si todo sale ✔, «Todo listo».
 
-`doctor` busca `./acciones.json` en la carpeta desde la que lo lanzas. Si lo
-ejecutas desde otra carpeta, pásale la ruta completa con `--config` (opción
-global, va **antes** de la orden):
+`doctor` busca primero `./acciones.json` en la carpeta desde la que lo lanzas y,
+si no está, `~/acciones.json` (el que crea el instalador). Si guardas el fichero
+en otro sitio, pásale la ruta completa con `--config` (opción global, va **antes**
+de la orden):
 
 ```bash
 tareas --config ~/Documents/CLI-TAREASJAVIER/acciones.json doctor
 ```
+
+### Si sale «No encuentro acciones.json»
+
+El ✘ significa que no ha aparecido en ninguno de los dos sitios de búsqueda.
+Tres salidas, de más a menos automática:
+
+1. **Reinstala** o copia la plantilla (`acciones.json`, `acciones-win.json` o
+   `acciones-mac.json`) a tu carpeta de inicio como `~/acciones.json`: es donde
+   la buscan todas las órdenes desde cualquier carpeta.
+2. **Deja un `acciones.json` en la carpeta actual** si trabajas dentro del repo.
+3. **Pásale la ruta exacta** con `--config`, que va siempre antes de la orden.
+
+Después de cualquiera de las tres, `tareas doctor` debe enseñar `acciones.json`
+en ✔; si el problema era el contenido, el ✘ te dirá la línea y el campo exactos.
 
 ## IA del centro
 
@@ -951,10 +967,11 @@ Si en tu Mac guardas las capturas en otra carpeta, cámbialo con
 `defaults write com.apple.screencapture location ~/Pictures/Screenshots` y
 ajusta el `origen` de `renombrar-capturas` en el JSON.
 
-`acciones.json` no se empaqueta con la instalación: fuera del repositorio,
-las órdenes que lo necesitan (`validar`, `acciones`, `ejecutar`) dan código 3
-si no les pasas `--config` con la ruta. `version`, `hola`, `sistema`,
-`comprobar-ia` y el menú no lo necesitan.
+`acciones.json` no se empaqueta con la instalación: el instalador copia una
+plantilla a `~/acciones.json`, que es la segunda ruta que buscan las órdenes que
+lo necesitan (`validar`, `acciones`, `ejecutar`, `doctor`) cuando no hay
+`./acciones.json` ni les pasas `--config`. `version`, `hola`, `sistema` y
+`comprobar-ia` no lo necesitan.
 
 ## Estructura
 

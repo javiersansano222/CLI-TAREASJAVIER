@@ -225,15 +225,18 @@ def _pintar_imagenes(
 def principal(
     ctx: typer.Context,
     config: Annotated[
-        Path,
+        Path | None,
         typer.Option(
             "--config",
-            help="Ruta del fichero de acciones (por defecto, ./acciones.json).",
+            help=(
+                "Ruta del fichero de acciones (por defecto, ./acciones.json o "
+                "~/acciones.json)."
+            ),
         ),
-    ] = Path("acciones.json"),
+    ] = None,
 ) -> None:
     """Configura la ruta de acciones.json para todas las órdenes."""
-    ctx.obj = config
+    ctx.obj = configuracion.resolver_ruta(config)
     if ctx.invoked_subcommand is None:
         _aplicar_tema_guardado()
         menu_interactivo(app)

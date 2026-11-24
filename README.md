@@ -479,6 +479,27 @@ Tres salidas, de más a menos automática:
 Después de cualquiera de las tres, `tareas doctor` debe enseñar `acciones.json`
 en ✔; si el problema era el contenido, el ✘ te dirá la línea y el campo exactos.
 
+Ejemplo completo en Linux/macOS:
+
+```bash
+$ cd ~ && tareas doctor
+│ acciones.json │ ✘ error │ No encuentro «acciones.json». ... │   # fallo
+
+# 1) Copiar la plantilla al home (lo que ya hace el instalador)
+$ cp ~/Documentos/CLI-TAREASJAVIER/acciones.json ~/acciones.json
+$ tareas doctor
+│ acciones.json │ ✔ ok │ 8 acciones válidas en /home/alumna/acciones.json │
+
+# 2) O, si trabajas dentro del repo, ejecutarlo desde su carpeta
+$ cd ~/Documentos/CLI-TAREASJAVIER && tareas doctor   # encuentra ./acciones.json
+
+# 3) O, si lo tienes en otro sitio, pasarle la ruta (--config va antes)
+$ tareas --config ~/Documentos/CLI-TAREASJAVIER/acciones.json doctor
+```
+
+En Windows los `~` se cambian por `%USERPROFILE%` y las barras por `\`; por lo
+demás, las tres salidas son idénticas.
+
 ## IA del centro
 
 El servidor del centro (`CENTRO_IA_URL` + `CENTRO_IA_KEY`) se usa desde dos

@@ -12,7 +12,7 @@ Mi herramienta de línea de órdenes para automatizar tareas repetitivas con fic
 6. **Nunca hará:** borrar sin pedir confirmación (salvo `--si`) ni tocar ficheros fuera del origen y destino configurados.
 7. **Plataformas:** Linux primero; también Windows y macOS.
 8. **Códigos de salida:** 0 bien · 1 fallo al ejecutar · 2 uso incorrecto · 3 configuración inválida · 4 IA no disponible (las demás órdenes siguen).
-9. **Seguridad:** toda acción, `capturas`, `temporales` e `imagenes` se pueden simular con `--simular`; nunca se sobrescribe un fichero ni un enlace existente y las imágenes siempre se guardan como copias.
+9. **Seguridad:** toda acción, `capturas`, `temporales` e `imagenes` se pueden simular con `--simular`; nunca se sobrescribe un fichero ni un enlace existente y las imágenes siempre se guardan como copias. Antes de tocar de verdad, lo destructivo pide confirmación (`ejecutar` en los tipos que borran; `capturas`, `temporales` e `imagenes` en general) y `--si` la salta para scripts.
 10. **Instalación:** un solo comando con `instalar.ps1` (Windows) o `instalar.sh` (macOS/Linux); para desarrollar, `uv tool install --editable .`.
 
 ## Instalación en otro equipo
@@ -1066,7 +1066,7 @@ cli-tareas/
 │       ├── 0001-configuracion-externa.md
 │       ├── 0002-ia-interfaz-y-salida-4.md
 │       └── 0003-temas-de-terminal.md
-├── tests/                     Suite con pytest (238 en verde)
+├── tests/                     Suite con pytest (238 casos: 237 en verde, 1 omitida)
 └── src/
     └── tareas/
         ├── __init__.py        Versión y salida en UTF-8
@@ -1094,6 +1094,30 @@ cli-tareas/
         ├── temporales.py      Detecta temporales antiguos y los manda a la papelera
         └── terminal.py        Temas de color para la terminal
 ```
+
+## Proceso: ramas, PRs y releases
+
+El proyecto se trabaja con ramas y Pull Requests para que el historial se lea
+como una conversación, no como una lista de cambios sueltos:
+
+- **`main`** es la rama estable; es la que instalan los scripts y la que se
+  prueba en los tres sistemas.
+- **Ramas de trabajo**: los bloques grandes se separan del tronco. La release
+  `1.0` se preparó en `release-1.0` y se integró con el **PR #2**
+  (`git log --merges` muestra el merge `Merge pull request #2 ...`).
+- **Pull Request**: cada PR explica qué cambia, por qué y cómo se ha probado;
+  GitHub Actions ejecuta `uv run pytest -v` en Ubuntu, Windows y macOS sobre
+  el PR antes de fusionarlo.
+- **Revisión previa**: `scripts/revisar.sh` pasa el diff preparado por el
+  agente revisor y devuelve código 1 si hay que corregir algo.
+- **Release**: cada versión se anota en `CHANGELOG.md` (Keep a Changelog) y se
+  etiqueta con `vX.Y.Z`. La `v1.0.0` está etiquetada y apunta al merge del
+  PR #2. Para congelar esa versión al instalar:
+  `uv tool install ...@v1.0.0`.
+
+Para una entrega nueva: crea una rama (`git switch -c mi-cambio`), haz commits
+pequeños con mensajes en imperativo, abre un PR, espera a que pasen las tres
+máquinas y fusiona. Después actualiza `CHANGELOG.md` y etiqueta la versión.
 
 ## Órdenes probadas a mano
 
@@ -1376,24 +1400,31 @@ instituto.
 
 Pruebas automáticas y release 1.0.0:
 
-- **237 tests en verde** con `uv run pytest -q`, todos en carpetas temporales
-  y sin red.
+- **238 casos: 237 en verde y 1 omitida** con `uv run pytest -q`, todos en
+  carpetas temporales y sin red.
   - `tests/conftest.py`: fixture `aislado` (autouse) con `tmp_path`, `HOME`,
     `USERPROFILE` y sin las variables del centro; `descargas` con ficheros
     feos, `escribir_config` y `ProveedorFalso`.
-  - `tests/test_config.py` (12): `parametrize` con tipo inexistente, destino
+  - `tests/test_config.py` (16): `parametrize` con tipo inexistente, destino
     vacío, sin descripción y regex rota; nombre repetido y JSON roto.
   - `tests/test_acciones.py` (23): mover, `--simular` que no crea ni la
     carpeta, nunca sobrescribir, `.JPG` en mayúsculas, borrar solo lo viejo y
     renombrar con plantilla.
-  - `tests/test_ia.py` (21): `a_nombre_seguro` (tildes, ruta peligrosa,
+  - `tests/test_ia.py` (22): `a_nombre_seguro` (tildes, ruta peligrosa,
     extensión duplicada y respuesta vacía), resumen y clasificación con
     `ProveedorFalso`, sin clave y sin red.
-  - `tests/test_cli.py` (7): `CliRunner` con los códigos de salida 0, 1, 2,
-    3 y 4.
+  - `tests/test_cli.py` (30): `CliRunner` con los códigos de salida 0, 1, 2,
+    3 y 4. La prueba clave del modo sin red es `test_ia_sin_clave_sale_con_4`:
+    sin `CENTRO_IA_KEY`, `ejecutar` de una acción con IA sale con 4 y el
+    mensaje «siguen funcionando», mientras `validar` y `doctor` siguen a 0.
   - `tests/test_buscar.py` (12): subcadena, glob, `--regex`, extensión
     normalizada, carpetas omitidas (`.git`, `.venv`…), orden por fecha y
     errores humanos de carpeta, regex y extensión.
+  - El resto se reparte en `test_mover.py` (12), `test_organizar.py` (15),
+    `test_historial.py` (17), `test_terminal.py` (38), `test_ajustes.py` (13),
+    `test_menu.py` (13), `test_rutas.py` (9), `test_doctor.py` (5),
+    `test_exportar_tema.py` (5), `test_motor.py` (6) y
+    `test_instaladores.py` (2).
 - Mutación comprobada: sacar el `mkdir` de `Mover` fuera del
   `if not simular` pone en rojo `test_simular_no_toca_el_disco`
   (1 failed, 67 passed); después se restauró el código.

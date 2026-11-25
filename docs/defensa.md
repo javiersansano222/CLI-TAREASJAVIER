@@ -31,7 +31,7 @@ touch -d '40 days ago' ~/pruebas-tareas/Demo/viejo.tmp
 ```bash
 tareas version
 tareas acciones
-tareas validar --config acciones.json
+tareas --config acciones.json validar
 ```
 
 Qué decir: «La versión, las 8 acciones que lee del JSON y que el esquema está
@@ -113,7 +113,7 @@ commit.»
 | IA y secretos (15) | `src/tareas/ia.py`; `resumir`, `renombrar_ia`, `clasificar`; `.env` en `.gitignore`; `.env.example`; código 4 sin clave/red | Excelente |
 | Robustez (15) | `src/tareas/errores.py`; `_mostrar_error` en `cli.py`; códigos 1/2/3/4; `assert` de invariantes | Excelente |
 | Diseño en clases/módulos (10) | `cli`, `motor`, `acciones`, `config`, `ia`; fábricas `desde_config` y `desde_entorno` | Excelente |
-| Pruebas y calidad (15) | `tests/` (220 tests), `pytest`, `.github/workflows/pruebas.yml` en 3 sistemas | Excelente |
+| Pruebas y calidad (15) | `tests/` (238 casos: 237 en verde y 1 omitida), `pytest`, `.github/workflows/pruebas.yml` en 3 sistemas | Excelente |
 | Instalación y proceso (10) | README con `uv tool install`; tag `v1.0.0` con changelog; rama `release-1.0` y PR #2 | Excelente |
 
 ---
@@ -121,7 +121,7 @@ commit.»
 ## 3. Cómo explicar las aserciones
 
 La rúbrica pide que sepas explicar cada aserción. No hace falta recitar las
-220: agrupa por idea y ten un ejemplo concreto de cada grupo. La estructura de
+238: agrupa por idea y ten un ejemplo concreto de cada grupo. La estructura de
 respuesta que funciona es:
 
 1. **Qué comprueba** la aserción.
@@ -259,7 +259,28 @@ respuesta que funciona es:
 - `tests/test_instaladores.py`: los instaladores no llevan BOM y el `.ps1` es
   solo ASCII. Evita que Windows PowerShell se atragante con el script.
 
-### 3.8. Aserciones dentro del código (rubric «aserciones en desarrollo»)
+### 3.8. Buscar, doctor, ajustes y exportación
+
+- `tests/test_buscar.py`: `test_asterisco_actua_como_global` demuestra que el
+  texto se trata como glob; `test_regex_rota_es_error` y
+  `test_carpeta_inexistente_es_error` son casos feos con mensaje humano;
+  `test_omite_carpetas_ruidosas` comprueba que no baja a `.git`, `.venv`,
+  `__pycache__` ni `node_modules`; `test_ordenar_por_fecha_descendente`
+  garantiza el orden de la tabla.
+- `tests/test_doctor.py`: `test_origen_en_otro_idioma_cuenta_como_ok` prueba
+  que `~/Descargas` vale si existe `~/Downloads`;
+  `test_ia_sin_clave_es_info_no_aviso` fija que fuera del centro la falta de
+  clave es informativa, no un aviso; `test_cada_estado_tiene_simbolo_y_color`
+  evita que un estado nuevo rompa la tabla.
+- `tests/test_ajustes.py`: `test_leer_json_roto_no_falla` y
+  `test_leer_json_que_no_es_objeto` cubren un ajuste corrupto sin tumbar la
+  CLI; `test_guardar_en_carpeta_imposible_da_error_humano` comprueba que un
+  fallo de permisos sale como error propio.
+- `tests/test_exportar_tema.py`: los tres formatos (Windows, iTerm y GNOME)
+  llevan sus 16 colores; `test_guardar_en_ruta_imposible_da_error_humano`
+  confirma que exportar a una ruta mala no deja un traceback.
+
+### 3.9. Aserciones dentro del código (rubric «aserciones en desarrollo»)
 
 No son tests, son invariantes que se comprueban mientras el programa corre:
 
@@ -338,7 +359,7 @@ equivocarse al clasificar; por eso lo dudoso se salta y se avisa.
 
 **¿Cómo se ejecutan las pruebas?**
 `uv run pytest`. En cada push y PR, GitHub Actions lo lanza en Ubuntu, Windows
-y macOS (`.github/workflows/pruebas.yml`). En Linux hoy: 220 pasan y 1 se salta.
+y macOS (`.github/workflows/pruebas.yml`). En Linux hoy: 237 pasan y 1 se salta.
 
 **¿Por qué hay una prueba que se salta?**
 Es `tests/test_terminal.py:159` (`test_la_consola_clasica_de_windows_avisa`),
@@ -398,7 +419,7 @@ revisa y versiona con git.
 ## 8. Checklist de última hora
 
 - [ ] `uv run pytest -q` termina en verde.
-- [ ] `tareas --help`, `tareas acciones` y `tareas validar --config acciones.json` funcionan.
+- [ ] `tareas --help`, `tareas acciones` y `tareas --config acciones.json validar` funcionan.
 - [ ] Sabes explicar los códigos 0, 1, 2, 3 y 4 con un ejemplo cada uno.
 - [ ] Sabes explicar qué hace `--simular` y por qué no toca disco.
 - [ ] Sabes explicar por qué nunca se sobrescribe (`destino_libre`).

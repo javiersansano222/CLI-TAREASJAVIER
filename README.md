@@ -1112,9 +1112,10 @@ como una conversación, no como una lista de cambios sueltos:
   agente revisor y devuelve código 1 si hay que corregir algo.
 - **Release**: cada versión se anota en `CHANGELOG.md` (Keep a Changelog) y se
   etiqueta con `vX.Y.Z`. La última (`v1.2.0`) corresponde a `buscar`,
-  `historial` y `deshacer`; las anteriores (`v1.1.0`, `v1.0.0`) quedan en el
-  historial, y la `v1.0.0` apunta al merge del PR #2. Para congelar una versión
-  al instalar: `uv tool install ...@v1.2.0`.
+  `historial` y `deshacer`; `v1.0.0` está etiquetada y apunta al merge del
+  PR #2; la 1.1.0 (`mover`, `organizar` y `tema`) quedó reflejada en el
+  CHANGELOG pero no se etiquetó como tag: se engloba en `main` y en `v1.2.0`.
+  Para congelar una versión al instalar: `uv tool install ...@v1.2.0`.
 
 Para una entrega nueva: crea una rama (`git switch -c mi-cambio`), haz commits
 pequeños con mensajes en imperativo, abre un PR, espera a que pasen las tres

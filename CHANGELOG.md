@@ -6,6 +6,8 @@ Todos los cambios que notará quien USA la herramienta. Formato:
 
 ## [No publicado]
 
+## [1.2.0] - 2026-11-26
+
 ### Añadido
 
 - `tareas buscar <texto>`: busca ficheros por nombre de forma recursiva y los

@@ -146,7 +146,7 @@ tareas version
 tareas --help | grep -E "historial|deshacer|mover|organizar"
 ```
 
-`version` dice `1.1.0` en toda esta entrega, así que la segunda orden es la que
+`version` dice `1.2.0` en toda esta entrega, así que la segunda orden es la que
 confirma que tienes las órdenes más recientes.
 
 **5. Para que `uv` y `tareas` sigan ahí en la próxima terminal** (solo una vez):
@@ -165,8 +165,8 @@ Para **actualizar** más adelante, repite el paso 3: el `--force` reemplaza la
 versión instalada. Para **congelar** una versión concreta, usa su etiqueta:
 
 ```bash
-uv tool install https://github.com/javiersansano222/CLI-TAREASJAVIER/archive/refs/tags/v1.0.0.tar.gz --force
-uv tool install git+https://github.com/javiersansano222/CLI-TAREASJAVIER@v1.0.0 --force
+uv tool install https://github.com/javiersansano222/CLI-TAREASJAVIER/archive/refs/tags/v1.2.0.tar.gz --force
+uv tool install git+https://github.com/javiersansano222/CLI-TAREASJAVIER@v1.2.0 --force
 ```
 
 ### Primeros pasos
@@ -310,7 +310,7 @@ Si dice «No such file or directory», salta al paso 5. Si tampoco existe
 ~/.local/bin/tareas version
 ```
 
-- Si responde `tareas 1.1.0`, el programa está bien y solo falta el PATH: paso 3.
+- Si responde `tareas 1.2.0`, el programa está bien y solo falta el PATH: paso 3.
 - Si dice «Permission denied»: paso 4.
 
 **3. Añade `~/.local/bin` al PATH para siempre:**
@@ -595,7 +595,7 @@ caber en una pantalla. Arriba están los tres primeros pasos; debajo, las
 órdenes agrupadas por lo que quieres hacer; al final, un consejo:
 
 ```text
-╭─ tareas 1.1.0 ─────────────────────────────────────────────╮
+╭─ tareas 1.2.0 ─────────────────────────────────────────────╮
 │ Ordena, limpia y entiende tus ficheros sin miedo.          │
 ╰────────────────────────────────────────────────────────────╯
 
@@ -1111,9 +1111,10 @@ como una conversación, no como una lista de cambios sueltos:
 - **Revisión previa**: `scripts/revisar.sh` pasa el diff preparado por el
   agente revisor y devuelve código 1 si hay que corregir algo.
 - **Release**: cada versión se anota en `CHANGELOG.md` (Keep a Changelog) y se
-  etiqueta con `vX.Y.Z`. La `v1.0.0` está etiquetada y apunta al merge del
-  PR #2. Para congelar esa versión al instalar:
-  `uv tool install ...@v1.0.0`.
+  etiqueta con `vX.Y.Z`. La última (`v1.2.0`) corresponde a `buscar`,
+  `historial` y `deshacer`; las anteriores (`v1.1.0`, `v1.0.0`) quedan en el
+  historial, y la `v1.0.0` apunta al merge del PR #2. Para congelar una versión
+  al instalar: `uv tool install ...@v1.2.0`.
 
 Para una entrega nueva: crea una rama (`git switch -c mi-cambio`), haz commits
 pequeños con mensajes en imperativo, abre un PR, espera a que pasen las tres
@@ -1398,7 +1399,7 @@ instituto.
 
 ## Estado de la semana 4
 
-Pruebas automáticas y release 1.0.0:
+Pruebas automáticas y releases etiquetadas:
 
 - **238 casos: 237 en verde y 1 omitida** con `uv run pytest -q`, todos en
   carpetas temporales y sin red.
@@ -1430,7 +1431,7 @@ Pruebas automáticas y release 1.0.0:
   (1 failed, 67 passed); después se restauró el código.
 - GitHub Actions (`.github/workflows/pruebas.yml`): `uv run pytest -v` en
   Ubuntu, Windows y macOS en cada push y pull request.
-- Versión **1.0.0** en `pyproject.toml` y `src/tareas/__init__.py`,
+- Versión **1.2.0** en `pyproject.toml` y `src/tareas/__init__.py`,
   `CHANGELOG.md` para quien usa la herramienta y README con la instalación
   en una orden y la desinstalación.
 - `scripts/revisar.sh`: el diff preparado se revisa con
